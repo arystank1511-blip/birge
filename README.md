@@ -4,7 +4,9 @@
 
 A real-time kanban tracker for small teams: workspaces with roles and invite links, live updates and presence, a drag-and-drop board, and a UI in English, Russian and Kazakh.
 
-**Try it:** run it locally (see below) and click **Explore the demo workspace**. No sign-up needed. To see real-time sync, open the app in two windows.
+**Live demo: [birge-kp0v.onrender.com](https://birge-kp0v.onrender.com)**. Click **Explore the demo workspace**, no sign-up needed. To see real-time sync, open it in two windows and drag a card in one.
+
+> Hosted on Render's free plan: after 15 minutes without visitors the server sleeps, so the first load can take up to a minute. The demo data resets on every restart.
 
 ## Features
 
