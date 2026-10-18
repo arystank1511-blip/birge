@@ -2,13 +2,13 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 import { tx, type DB } from './db';
 
-export const DEMO_EMAIL = 'demo@tasklane.dev';
+export const DEMO_EMAIL = 'demo@birge.example';
 
 const USERS = [
   { name: 'Alex Morgan', email: DEMO_EMAIL, color: '#c6f36b' },
-  { name: 'Mira Chen', email: 'mira@tasklane.dev', color: '#7ee0d2' },
-  { name: 'Theo Walker', email: 'theo@tasklane.dev', color: '#ffb27a' },
-  { name: 'Sana Iqbal', email: 'sana@tasklane.dev', color: '#b9a4ff' },
+  { name: 'Mira Chen', email: 'mira@birge.example', color: '#7ee0d2' },
+  { name: 'Theo Walker', email: 'theo@birge.example', color: '#ffb27a' },
+  { name: 'Sana Iqbal', email: 'sana@birge.example', color: '#b9a4ff' },
 ];
 
 const PROJECTS: { name: string; color: string; personal?: boolean }[] = [

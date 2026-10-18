@@ -17,6 +17,8 @@ interface Props {
   selectedProject?: number;
   page: Page;
   open: boolean;
+  /** Real-time connection state, shown by the logo's dot. */
+  live: boolean;
   onSwitchWorkspace: (id: number) => void;
   onSelectProject: (id: number | undefined) => void;
   onOpenMembers: () => void;
@@ -29,6 +31,7 @@ export function Sidebar({
   selectedProject,
   page,
   open,
+  live,
   onSwitchWorkspace,
   onSelectProject,
   onOpenMembers,
@@ -62,7 +65,7 @@ export function Sidebar({
 
   return (
     <aside className={`sidebar glass${open ? ' sidebar-open' : ''}`}>
-      <Logo />
+      <Logo pulse={live} idle={!live} />
       <WorkspaceSwitcher workspaces={workspaces} onSwitch={onSwitchWorkspace} />
 
       <nav className="nav">

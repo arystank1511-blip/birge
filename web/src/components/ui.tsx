@@ -2,15 +2,21 @@ import type { ReactNode, SelectHTMLAttributes } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { User } from '../api';
 
-export function Logo({ compact = false }: { compact?: boolean }) {
+/**
+ * "Live dot" wordmark: the tittle of the i is a status light.
+ * `pulse` animates it while the real-time connection is up; `idle` greys it out while reconnecting.
+ */
+export function Logo({ pulse = false, idle = false }: { pulse?: boolean; idle?: boolean }) {
   return (
-    <div className="logo">
-      <svg className="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
-        <rect width="32" height="32" rx="10" />
-        <path d="M9 11h14M9 16h9M9 21h5" />
-      </svg>
-      {!compact && <span>Tasklane</span>}
-    </div>
+    <span className="logo" role="img" aria-label="Birge">
+      <span className="logo-word" aria-hidden="true">
+        b
+        <span className="logo-i">
+          ı<span className={`logo-dot${pulse ? ' pulse' : ''}${idle ? ' idle' : ''}`} />
+        </span>
+        rge
+      </span>
+    </span>
   );
 }
 

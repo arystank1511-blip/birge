@@ -7,7 +7,7 @@ try {
   // No .env file.
 }
 
-const db = openDb(process.env.DB_FILE ?? 'data/tasklane.db');
+const db = openDb(process.env.DB_FILE ?? 'data/birge.db');
 reset(db);
 seed(db);
 console.log('Database reset with demo data.');

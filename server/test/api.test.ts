@@ -271,7 +271,7 @@ describe('workspaces', () => {
       INSERT INTO projects VALUES (1, 'Old', '#fff', 1, 'now');
     `);
     // openDb takes a path, so exercise the same migration by re-running the schema on this handle.
-    const file = `${process.env.TEMP ?? '/tmp'}/tasklane-migrate-${Date.now()}.db`;
+    const file = `${process.env.TEMP ?? '/tmp'}/birge-migrate-${Date.now()}.db`;
     legacy.exec(`VACUUM INTO '${file.replace(/\\/g, '/')}'`);
     const migrated = openDb(file);
     const roles = migrated.prepare('SELECT user_id, role FROM memberships ORDER BY user_id').all();

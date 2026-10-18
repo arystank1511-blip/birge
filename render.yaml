@@ -4,7 +4,7 @@
 # DB_FILE at it (paid plan).
 services:
   - type: web
-    name: tasklane
+    name: birge
     runtime: node
     plan: free
     buildCommand: npm ci --include=dev && npm run build

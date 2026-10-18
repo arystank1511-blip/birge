@@ -186,6 +186,7 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
           selectedProject={projectId}
           page={page}
           open={sidebarOpen}
+          live={connected}
           onSwitchWorkspace={onSwitch}
           onSelectProject={(id) => {
             setProjectId(id);

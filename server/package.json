@@ -1,5 +1,5 @@
 {
-  "name": "@tasklane/server",
+  "name": "@birge/server",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,5 +1,5 @@
 {
-  "name": "@tasklane/web",
+  "name": "@birge/web",
   "private": true,
   "type": "module",
   "scripts": {

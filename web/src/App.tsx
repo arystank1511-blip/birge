@@ -25,7 +25,7 @@ export default function App() {
   if (me.isPending) {
     screen = (
       <div className="splash">
-        <Logo />
+        <Logo pulse />
       </div>
     );
   } else if (joinToken) {

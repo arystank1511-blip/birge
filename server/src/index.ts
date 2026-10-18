@@ -13,7 +13,7 @@ const isProd = process.env.NODE_ENV === 'production';
 // `--port` wins over PORT so the dev script stays on 4000 even when a tool exports PORT for Vite.
 const portFlag = process.argv.indexOf('--port');
 const port = Number(portFlag > -1 ? process.argv[portFlag + 1] : (process.env.PORT ?? 4000));
-const dbFile = process.env.DB_FILE ?? 'data/tasklane.db';
+const dbFile = process.env.DB_FILE ?? 'data/birge.db';
 
 let jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
@@ -36,5 +36,5 @@ const app = createApp(db, {
 });
 
 app.listen(port, () => {
-  console.log(`Tasklane API listening on http://localhost:${port}`);
+  console.log(`Birge API listening on http://localhost:${port}`);
 });

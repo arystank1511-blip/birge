@@ -41,7 +41,7 @@ export function WorkspaceGate({ me }: { me: User }) {
   if (!workspaces.data) {
     return (
       <div className="splash">
-        <Logo />
+        <Logo pulse />
       </div>
     );
   }

@@ -31,7 +31,7 @@ export function JoinScreen({ token, me, onDone }: Props) {
   if (preview.isPending) {
     return (
       <div className="splash">
-        <Logo />
+        <Logo pulse />
       </div>
     );
   }

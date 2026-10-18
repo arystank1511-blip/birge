@@ -163,7 +163,7 @@ const en = {
   'join.decline': 'Not now',
   'join.invalid': 'This invite link is no longer valid',
   'join.askNew': 'Ask whoever sent it for a new one.',
-  'join.goToApp': 'Go to Tasklane',
+  'join.goToApp': 'Go to Birge',
   'join.joined': 'You joined {workspace}',
 
   'live.created': '{actor} added “{title}”',
@@ -362,7 +362,7 @@ const ru: Dictionary = {
   'join.decline': 'Не сейчас',
   'join.invalid': 'Эта ссылка-приглашение больше не действует',
   'join.askNew': 'Попросите отправителя прислать новую.',
-  'join.goToApp': 'Перейти в Tasklane',
+  'join.goToApp': 'Перейти в Birge',
   'join.joined': 'Вы присоединились к «{workspace}»',
 
   // Russian past tense is gendered, so live messages avoid "добавил/добавила".
@@ -559,7 +559,7 @@ const kk: Dictionary = {
   'join.decline': 'Қазір емес',
   'join.invalid': 'Бұл шақыру сілтемесі енді жарамсыз',
   'join.askNew': 'Жіберген адамнан жаңасын сұраңыз.',
-  'join.goToApp': 'Tasklane-ге өту',
+  'join.goToApp': 'Birge-ге өту',
   'join.joined': 'Сіз «{workspace}» кеңістігіне қосылдыңыз',
 
   'live.created': '{actor} «{title}» тапсырмасын қосты',

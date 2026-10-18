@@ -430,7 +430,9 @@ kbd {
   height: 100%;
   display: grid;
   place-items: center;
-  animation: pulse 1.4s ease-in-out infinite;
+}
+.splash .logo-word {
+  font-size: 40px;
 }
 @keyframes pulse {
   50% {
@@ -438,26 +440,53 @@ kbd {
   }
 }
 
+/* Wordmark: "bırge" in Unbounded with a live status light standing in for the dot of the i. */
 .logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  align-self: flex-start;
+  color: var(--text);
+}
+.logo-word {
+  font-family: 'Unbounded', var(--font);
   font-weight: 700;
-  font-size: 17px;
-  letter-spacing: -0.02em;
+  font-size: 23px;
+  line-height: 1;
+  letter-spacing: -0.035em;
 }
-.logo-mark {
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
+.logo-i {
+  position: relative;
 }
-.logo-mark rect {
-  fill: var(--accent);
+.logo-dot {
+  --dot: #22c55e;
+  position: absolute;
+  left: 50%;
+  top: 0.01em;
+  width: 0.245em;
+  height: 0.245em;
+  border-radius: 50%;
+  background: var(--dot);
+  transform: translateX(-50%);
 }
-.logo-mark path {
-  stroke: var(--accent-ink);
-  stroke-width: 3;
-  stroke-linecap: round;
+.logo-dot.idle {
+  --dot: var(--muted);
+}
+.logo-dot.pulse {
+  animation: dot-live 2.4s ease-out infinite;
+}
+@keyframes dot-live {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dot) 55%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.22em color-mix(in srgb, var(--dot) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-dot.pulse {
+    animation: none;
+  }
 }
 
 .auth {

@@ -1,4 +1,6 @@
-# Tasklane
+# Birge
+
+*Birge* means “together” in Kazakh. The dot over the i in the logo is a live status light: it pulses while you're connected to your team in real time.
 
 A real-time kanban tracker for small teams: workspaces with roles and invite links, live updates and presence, a drag-and-drop board, and a UI in English, Russian and Kazakh.
 
@@ -36,7 +38,7 @@ npm run dev
 - Web app: http://localhost:5173
 - API: http://localhost:4000 (Vite proxies `/api`)
 
-The SQLite database is created at `server/data/tasklane.db` and seeded with demo data on first start: a 4-person team workspace and a personal one. To reset it, run `npm run seed`.
+The SQLite database is created at `server/data/birge.db` and seeded with demo data on first start: a 4-person team workspace and a personal one. To reset it, run `npm run seed`.
 
 ```bash
 npm test            # API tests
