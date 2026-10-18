@@ -1,0 +1,19 @@
+# Render Blueprint: one Node web service that serves the API, the SSE stream and the built frontend.
+# Free instances have an ephemeral disk, so the SQLite file resets on restart or redeploy and the
+# demo workspace is seeded again on boot. For data that must survive, add a persistent disk and point
+# DB_FILE at it (paid plan).
+services:
+  - type: web
+    name: tasklane
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
+      - key: JWT_SECRET
+        generateValue: true
