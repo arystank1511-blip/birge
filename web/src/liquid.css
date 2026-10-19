@@ -41,22 +41,37 @@
   --lg-fill-bottom: color-mix(in srgb, var(--wp-b) 10%, rgba(24, 26, 36, 0.42));
 }
 
-/* Typography: system display face for titles, even-width figures for numbers. */
+/* Typography: Unbounded only for the big titles (it is wide, so a step smaller and a touch lighter),
+   Golos Text for everything else, numbers included, with even-width figures. */
 body {
-  font-optical-sizing: auto;
-  letter-spacing: -0.006em;
+  letter-spacing: -0.004em;
 }
-h1,
-h2,
-.stat-value,
-.big-number strong,
-.mini-stat strong,
-.donut-center strong {
+.page-title h1,
+.auth-card h1,
+.drawer-title,
+.month-title {
   font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
 }
 .page-title h1 {
-  font-weight: 700;
-  letter-spacing: -0.028em;
+  font-size: 27px;
+  line-height: 1.15;
+}
+.auth-card h1 {
+  font-size: 22px;
+}
+.drawer-title {
+  font-size: 19px;
+  line-height: 1.3;
+}
+@media (max-width: 860px) {
+  .page-title h1 {
+    font-size: 21px;
+  }
+}
+h2 {
+  letter-spacing: -0.012em;
 }
 .mono {
   font-variant-numeric: tabular-nums;

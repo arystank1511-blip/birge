@@ -64,6 +64,22 @@
 .cap::first-letter {
   text-transform: uppercase;
 }
+/* Panels are grids; without this a long task title would size its row to the full text and push the
+   panel past the screen edge instead of truncating. */
+.panel > *,
+.person > * {
+  min-width: 0;
+}
+/* Same for list rows: one column that never grows past its container. */
+.next-list,
+.project-progress,
+.my-list,
+.compact-list,
+.load-list,
+.donut-legend,
+.status-split {
+  grid-template-columns: minmax(0, 1fr);
+}
 .reveal-fill {
   flex: 1;
   min-height: 0;

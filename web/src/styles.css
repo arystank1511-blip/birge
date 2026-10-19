@@ -1,9 +1,9 @@
 /* ───────────── Tokens ───────────── */
 :root {
-  /* Apple devices render their own SF Pro through the system keywords; everywhere else Inter, the closest
-     open typeface (with Cyrillic and Kazakh letters), takes over. SF Pro itself can't be shipped on the web. */
-  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI Variable', system-ui, sans-serif;
+  /* Golos Text for everything you read (excellent Cyrillic, all Kazakh letters); Unbounded, the logo's face,
+     for page titles only, so headings echo the wordmark. */
+  --font: 'Golos Text', -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Unbounded', 'Golos Text', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   /* Numbers use the same family with even-width figures, like iOS, instead of a code font. */
   --mono: var(--font);
 
