@@ -150,6 +150,17 @@
   --aurora-3: rgba(255, 178, 122, 0.15);
 }
 
+/* ───────────── Dot grid background ─────────────
+   Sits above the aurora and below every panel. Decorative only: never takes clicks, hovers or focus. */
+.dot-grid {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+}
+
 /* ───────────── Popovers & settings ───────────── */
 .popover {
   position: absolute;
