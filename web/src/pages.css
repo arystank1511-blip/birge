@@ -1197,6 +1197,21 @@
   .page {
     overflow: visible;
   }
+  /* Headers with several controls wrap onto a second row instead of pushing the page sideways. */
+  .page .page-head {
+    flex-wrap: wrap;
+  }
+  .page .page-head .page-title {
+    flex-basis: 55%;
+  }
+  .page-head .segmented {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .segmented button {
+    white-space: nowrap;
+  }
   .topbar-search {
     min-width: 0;
   }
