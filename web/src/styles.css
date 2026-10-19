@@ -1,7 +1,11 @@
 /* ───────────── Tokens ───────────── */
 :root {
-  --font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Apple devices render their own SF Pro through the system keywords; everywhere else Inter, the closest
+     open typeface (with Cyrillic and Kazakh letters), takes over. SF Pro itself can't be shipped on the web. */
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI Variable', system-ui, sans-serif;
+  /* Numbers use the same family with even-width figures, like iOS, instead of a code font. */
+  --mono: var(--font);
 
   --bg: #0b0d0c;
   --glass: rgba(26, 30, 28, 0.62);

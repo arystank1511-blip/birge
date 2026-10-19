@@ -27,17 +27,29 @@ export function Wallpaper() {
     let raf = 0;
     let x = 0;
     let y = 0;
+    let clientX = 0;
+    let clientY = 0;
+    let pane: HTMLElement | null = null;
 
     const apply = () => {
       raf = 0;
       el.style.setProperty('--px', x.toFixed(3));
       el.style.setProperty('--py', y.toFixed(3));
+      // The glass pane under the pointer gets its specular sheen positioned at the pointer.
+      if (pane) {
+        const rect = pane.getBoundingClientRect();
+        pane.style.setProperty('--mx', `${Math.round(clientX - rect.left)}px`);
+        pane.style.setProperty('--my', `${Math.round(clientY - rect.top)}px`);
+      }
     };
     const onMove = (e: PointerEvent) => {
       if (e.pointerType === 'touch' || !fine.matches || still.matches) return;
       // -1..1 from the centre of the window.
       x = (e.clientX / window.innerWidth) * 2 - 1;
       y = (e.clientY / window.innerHeight) * 2 - 1;
+      clientX = e.clientX;
+      clientY = e.clientY;
+      pane = e.target instanceof Element ? (e.target.closest('.glass, .card') as HTMLElement | null) : null;
       if (!raf) raf = requestAnimationFrame(apply);
     };
 

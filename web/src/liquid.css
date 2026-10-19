@@ -1,0 +1,322 @@
+/* ───────────── Liquid glass ─────────────
+   Our take on the "liquid glass" material: very clear, strongly blurred and saturated panes with real thickness.
+   Each pane gets
+   - a lit rim: a 1px gradient ring (brightest top-left, a second glint bottom-right), drawn with a masked ::before
+   - depth: an inner top highlight and a faint inner bottom glow, plus a soft coloured drop shadow
+   - a specular sheen that follows the pointer (--mx/--my set by Wallpaper.tsx), drawn with ::after
+   Buttons and the selected item of segmented controls become small glass lenses. */
+
+:root {
+  --lg-fill-top: rgba(255, 255, 255, 0.58);
+  --lg-fill-bottom: rgba(255, 255, 255, 0.3);
+  --lg-strong-top: rgba(255, 255, 255, 0.82);
+  --lg-strong-bottom: rgba(255, 255, 255, 0.62);
+  --lg-rim: rgba(255, 255, 255, 0.95);
+  --lg-rim-soft: rgba(255, 255, 255, 0.18);
+  --lg-inner-top: rgba(255, 255, 255, 0.9);
+  --lg-inner-bottom: rgba(255, 255, 255, 0.35);
+  --lg-drop: 0 18px 40px -22px rgba(28, 34, 80, 0.35), 0 2px 6px -2px rgba(28, 34, 80, 0.08);
+  --lg-sheen: rgba(255, 255, 255, 0.55);
+  --lg-blur: blur(26px) saturate(190%) brightness(1.04);
+}
+[data-theme='dark'] {
+  --lg-fill-top: rgba(58, 62, 78, 0.5);
+  --lg-fill-bottom: rgba(28, 30, 40, 0.38);
+  --lg-strong-top: rgba(52, 56, 70, 0.86);
+  --lg-strong-bottom: rgba(30, 32, 42, 0.8);
+  --lg-rim: rgba(255, 255, 255, 0.34);
+  --lg-rim-soft: rgba(255, 255, 255, 0.05);
+  --lg-inner-top: rgba(255, 255, 255, 0.16);
+  --lg-inner-bottom: rgba(255, 255, 255, 0.05);
+  --lg-drop: 0 22px 46px -24px rgba(0, 0, 0, 0.75), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --lg-sheen: rgba(255, 255, 255, 0.14);
+  --lg-blur: blur(28px) saturate(170%) brightness(0.98);
+}
+[data-glass='tinted'] {
+  --lg-fill-top: color-mix(in srgb, var(--wp-a) 34%, rgba(255, 255, 255, 0.6));
+  --lg-fill-bottom: color-mix(in srgb, var(--wp-b) 18%, rgba(255, 255, 255, 0.32));
+}
+[data-theme='dark'][data-glass='tinted'] {
+  --lg-fill-top: color-mix(in srgb, var(--wp-b) 18%, rgba(46, 50, 64, 0.55));
+  --lg-fill-bottom: color-mix(in srgb, var(--wp-b) 10%, rgba(24, 26, 36, 0.42));
+}
+
+/* Typography: system display face for titles, even-width figures for numbers. */
+body {
+  font-optical-sizing: auto;
+  letter-spacing: -0.006em;
+}
+h1,
+h2,
+.stat-value,
+.big-number strong,
+.mini-stat strong,
+.donut-center strong {
+  font-family: var(--font-display);
+}
+.page-title h1 {
+  font-weight: 700;
+  letter-spacing: -0.028em;
+}
+.mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.stat-value,
+.mini-stat strong {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+/* ── The material ── */
+/* Zero specificity on purpose: panes that are fixed or absolute (mobile sidebar, drawer, modal, palette,
+   popovers) keep their own positioning; everything else becomes the anchor for the rim and sheen layers. */
+:where(.glass, .card, .column) {
+  position: relative;
+}
+.glass,
+.card,
+.column {
+  isolation: isolate;
+  background: linear-gradient(180deg, var(--lg-fill-top), var(--lg-fill-bottom));
+  border: 0;
+  box-shadow:
+    inset 0 1px 0.5px var(--lg-inner-top),
+    inset 0 -1px 1.5px var(--lg-inner-bottom),
+    var(--lg-drop);
+  backdrop-filter: var(--lg-blur);
+  -webkit-backdrop-filter: var(--lg-blur);
+}
+.sidebar.glass,
+.drawer.glass,
+.modal.glass,
+.palette.glass,
+.popover.glass {
+  background: linear-gradient(180deg, var(--lg-strong-top), var(--lg-strong-bottom));
+}
+
+/* Lit rim. A gradient ring masked down to 1px, so it follows any border radius. */
+.glass::before,
+.column::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    145deg,
+    var(--lg-rim) 0%,
+    var(--lg-rim-soft) 28%,
+    var(--lg-rim-soft) 62%,
+    color-mix(in srgb, var(--lg-rim) 70%, transparent) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Specular sheen following the pointer. Invisible until the pointer is over the pane. */
+.glass::after,
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    260px circle at var(--mx, 50%) var(--my, -40%),
+    var(--lg-sheen),
+    transparent 62%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  /* Inside the pane's own stacking context: above its fill, below its text. */
+  z-index: -1;
+}
+.glass:hover::after,
+.card:hover::after {
+  opacity: 1;
+}
+
+/* Cards on the board are smaller, denser lenses. */
+.card {
+  background: linear-gradient(180deg, var(--lg-strong-top), var(--lg-strong-bottom));
+  box-shadow:
+    inset 0 1px 0.5px var(--lg-inner-top),
+    inset 0 0 0 0.5px var(--lg-rim-soft),
+    0 10px 24px -16px rgba(28, 34, 80, 0.35);
+}
+[data-theme='dark'] .card {
+  box-shadow:
+    inset 0 1px 0.5px var(--lg-inner-top),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 12px 26px -16px rgba(0, 0, 0, 0.8);
+}
+.card:hover {
+  background: linear-gradient(180deg, var(--lg-strong-top), var(--lg-strong-top));
+  transform: translateY(-1px);
+}
+.column {
+  background: linear-gradient(180deg, var(--lg-fill-top), color-mix(in srgb, var(--lg-fill-bottom) 70%, transparent));
+}
+
+/* ── Lenses: buttons, chips and selected segments ── */
+.btn-accent,
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.55),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.14),
+    0 10px 24px -10px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.btn-accent {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 72%, #fff), var(--accent) 55%);
+}
+.btn-primary {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 82%, #fff), var(--text) 60%);
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.35),
+    inset 0 -2px 6px rgba(0, 0, 0, 0.25),
+    0 10px 22px -12px rgba(0, 0, 0, 0.5);
+}
+/* A highlight band across the top half of every lens button. */
+.btn-accent::after,
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 1px 10% auto;
+  height: 45%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.btn-ghost-glass,
+.chip,
+.select,
+.search,
+.topbar-search,
+.input,
+.textarea,
+.auth-form input {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.22));
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.85), 0 1px 2px rgba(28, 34, 80, 0.06);
+}
+[data-theme='dark'] .btn-ghost-glass,
+[data-theme='dark'] .chip,
+[data-theme='dark'] .select,
+[data-theme='dark'] .search,
+[data-theme='dark'] .topbar-search,
+[data-theme='dark'] .input,
+[data-theme='dark'] .textarea,
+[data-theme='dark'] .auth-form input {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.12);
+}
+.chip-on {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 26%, #fff), color-mix(in srgb, var(--accent) 14%, transparent));
+}
+
+.segmented {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16));
+  border: 0;
+  box-shadow:
+    inset 0 1px 1px rgba(28, 34, 80, 0.08),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+}
+[data-theme='dark'] .segmented {
+  background: rgba(0, 0, 0, 0.22);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+}
+/* The selected segment is a raised glass lens. */
+.segmented button.on {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.78));
+  color: var(--text);
+  box-shadow:
+    inset 0 1px 0.5px #fff,
+    inset 0 -1px 1px rgba(28, 34, 80, 0.06),
+    0 4px 12px -4px rgba(28, 34, 80, 0.25),
+    0 0 0 0.5px rgba(28, 34, 80, 0.06);
+}
+[data-theme='dark'] .segmented button.on {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12));
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.3), 0 4px 12px -4px rgba(0, 0, 0, 0.6);
+}
+
+/* The active nav item reads as a lens resting in the sidebar. */
+.nav-item.active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.66));
+  box-shadow:
+    inset 0 1px 0.5px #fff,
+    0 6px 16px -8px rgba(28, 34, 80, 0.28),
+    0 0 0 0.5px rgba(28, 34, 80, 0.05);
+}
+[data-theme='dark'] .nav-item.active {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+  box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.28), 0 6px 16px -8px rgba(0, 0, 0, 0.6);
+}
+
+/* Inner wells inside panes (progress tracks, boxes) stay slightly recessed. */
+.overview-box,
+.person-load,
+.next-item,
+.day {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18));
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.55);
+}
+[data-theme='dark'] .overview-box,
+[data-theme='dark'] .person-load,
+[data-theme='dark'] .next-item,
+[data-theme='dark'] .day {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+}
+.next-first {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, #fff), color-mix(in srgb, var(--accent) 12%, transparent));
+}
+.day-selected {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* Toasts become floating glass capsules. */
+.toast {
+  border: 0;
+  box-shadow:
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.25),
+    0 18px 40px -16px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+.toast-success {
+  background: color-mix(in srgb, var(--text) 86%, transparent);
+}
+
+/* Respect the user's "reduce transparency" choice and the OS setting. */
+[data-solid='on'] .glass,
+[data-solid='on'] .card,
+[data-solid='on'] .column {
+  background: var(--card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .card,
+  .column {
+    background: var(--card);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass::after,
+  .card::after {
+    display: none;
+  }
+}
