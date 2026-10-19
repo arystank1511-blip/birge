@@ -11,12 +11,23 @@ const USERS = [
   { name: 'Sana Iqbal', email: 'sana@birge.example', color: '#b9a4ff' },
 ];
 
-const PROJECTS: { name: string; color: string; personal?: boolean }[] = [
-  { name: 'Website relaunch', color: '#c6f36b' },
-  { name: 'Mobile app 3.0', color: '#7ee0d2' },
-  { name: 'Billing service', color: '#ffb27a' },
-  { name: 'Hiring sprint', color: '#b9a4ff' },
-  { name: 'Side projects', color: '#ff8fa3', personal: true },
+type SeedProject = {
+  name: string;
+  color: string;
+  description: string;
+  lead: number;
+  /** Days from today. */
+  start: number;
+  due: number;
+  personal?: boolean;
+};
+
+const PROJECTS: SeedProject[] = [
+  { name: 'Website relaunch', color: '#3b5bfd', description: 'New marketing site, pricing page and blog migration.', lead: 0, start: -24, due: 14 },
+  { name: 'Mobile app 3.0', color: '#14b8a6', description: 'Offline drafts, faster cold start and a fresh onboarding.', lead: 1, start: -30, due: 21 },
+  { name: 'Billing service', color: '#ff8a5b', description: 'Proration, tax IDs and reliable payment webhooks.', lead: 1, start: -18, due: 10 },
+  { name: 'Hiring sprint', color: '#8b7cff', description: 'Fill the frontend and backend roles before the next quarter.', lead: 3, start: -12, due: 18 },
+  { name: 'Side projects', color: '#ff7eb6', description: 'Portfolio work outside the team.', lead: 0, start: -7, due: 30, personal: true },
 ];
 
 type SeedTask = {
@@ -115,8 +126,21 @@ export function seed(db: DB) {
     const projectIds = PROJECTS.map((p) =>
       Number(
         db
-          .prepare('INSERT INTO projects (workspace_id, name, color, created_by, created_at) VALUES (?, ?, ?, ?, ?)')
-          .run(p.personal ? personal : team, p.name, p.color, userIds[0], createdAt).lastInsertRowid,
+          .prepare(
+            `INSERT INTO projects (workspace_id, name, color, description, lead_id, start_date, due_date, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            p.personal ? personal : team,
+            p.name,
+            p.color,
+            p.description,
+            userIds[p.lead],
+            dueDate(p.start),
+            dueDate(p.due),
+            userIds[0],
+            createdAt,
+          ).lastInsertRowid,
       ),
     );
 
@@ -154,5 +178,72 @@ export function seed(db: DB) {
         insertComment.run(taskId, userIds[who], body, new Date(now - (3 - j) * day).toISOString()),
       );
     });
+
+    // Three months of finished work so the insights (incl. "previous period"), burn-up and weekly charts
+    // have a real shape. Deterministic, so every reseed (and every free-tier restart) looks the same.
+    // Older rounds get a suffix so search and the palette don't show three identical titles.
+    const ROUND_SUFFIX = ['', ' (follow-up)', ' (first pass)'];
+    const history = [0, 1, 2].flatMap((round) =>
+      HISTORY.map((title, j) => ({ title: `${title}${ROUND_SUFFIX[round]}`, round, j })),
+    );
+    history.forEach(({ title, round, j }, i) => {
+      const projectIndex = i % 4;
+      const daysAgo = 1 + round * 30 + ((j * 7 + round * 5) % 30);
+      const completed = new Date(now - daysAgo * day - (i % 5) * 3_600_000);
+      const created = new Date(completed.getTime() - (2 + (i % 6)) * day);
+      // Most work lands on time; every fourth item slips by a couple of days.
+      const due = -daysAgo + (i % 4 === 0 ? -2 : 1 + (i % 3));
+      insertTask.run(
+        projectIds[projectIndex],
+        title,
+        '',
+        'done',
+        PRIORITY_CYCLE[i % PRIORITY_CYCLE.length],
+        dueDate(due),
+        userIds[i % userIds.length],
+        (positions.done = (positions.done ?? -1) + 1),
+        userIds[0],
+        created.toISOString(),
+        completed.toISOString(),
+        completed.toISOString(),
+      );
+    });
   });
 }
+
+const PRIORITY_CYCLE = ['medium', 'high', 'low', 'medium', 'urgent'] as const;
+
+const HISTORY = [
+  'Kickoff notes for the relaunch',
+  'Pick the analytics provider',
+  'Navigation prototype review',
+  'Image compression pipeline',
+  'Interview loop feedback form',
+  'Webhook signature checks',
+  'Footer and legal links',
+  'Push token refresh',
+  'Sourcing list for backend role',
+  'Currency rounding rules',
+  'Brand colour audit',
+  'Crash reporting setup',
+  'Plan comparison table copy',
+  'Offer letter template',
+  'Retry queue dashboard',
+  'Blog author pages',
+  'Tablet layout pass',
+  'Invoice numbering scheme',
+  'Hiring scorecard v2',
+  'Accessibility sweep on forms',
+  'Deep link routing',
+  'Trial expiry emails',
+  'Recruiter sync agenda',
+  'Sitemap and robots.txt',
+  'Settings screen polish',
+  'Refund reasons taxonomy',
+  'Take-home task brief',
+  'Cookie consent texts',
+  'Background sync limits',
+  'Payout report export',
+  'Portfolio review session',
+  'Core Web Vitals baseline',
+];

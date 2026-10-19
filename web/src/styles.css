@@ -156,30 +156,6 @@ kbd {
   color: var(--muted);
 }
 
-/* Soft colour fields drifting behind the glass — the signature of the app. */
-.aurora {
-  position: fixed;
-  inset: -20%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(38% 32% at 18% 12%, var(--aurora-1), transparent 70%),
-    radial-gradient(34% 30% at 88% 18%, var(--aurora-2), transparent 70%),
-    radial-gradient(40% 40% at 70% 95%, var(--aurora-3), transparent 70%);
-  filter: blur(20px);
-  animation: drift 26s ease-in-out infinite alternate;
-}
-@keyframes drift {
-  to {
-    transform: translate3d(3%, -2%, 0) rotate(4deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .aurora {
-    animation: none;
-  }
-}
-
 .glass {
   background: var(--glass);
   border: 1px solid var(--line);

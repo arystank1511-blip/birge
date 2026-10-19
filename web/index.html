@@ -15,14 +15,15 @@
       rel="stylesheet"
     />
     <script>
-      // Apply saved appearance before first paint; default is the light "paper" theme with cobalt.
+      // Apply saved appearance before first paint; default is the light "paper" look with cobalt.
       var root = document.documentElement;
-      try {
-        root.dataset.theme = localStorage.getItem('tl-theme') || 'light';
-        root.dataset.palette = localStorage.getItem('tl-palette') || 'cobalt';
-      } catch (e) {
-        root.dataset.theme = 'light';
-        root.dataset.palette = 'cobalt';
+      var defaults = { theme: 'light', palette: 'cobalt', wallpaper: 'paper', glass: 'clear', solid: 'off' };
+      for (var key in defaults) {
+        var value = defaults[key];
+        try {
+          value = localStorage.getItem('tl-' + key) || value;
+        } catch (e) {}
+        root.dataset[key] = value;
       }
     </script>
   </head>

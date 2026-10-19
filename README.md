@@ -12,6 +12,9 @@ A real-time kanban tracker for small teams: workspaces with roles and invite lin
 
 - **Teams.** Every account gets a personal workspace and can create more. Owners and admins invite people with expiring links (`/join/:token`). Roles are owner, admin and member, and the server enforces them. Removing someone unassigns their tasks and closes their live connection.
 - **Real time.** Changes stream over Server-Sent Events. Other members' boards update instantly, a toast says who did what, and the header shows who's online. Each tab ignores its own echoes, and after a reconnect the app resyncs.
+- **Pages for the whole week of work.** Home (greeting, progress rings, up next, my tasks, this week), Tasks (board and list), Calendar (month of due dates), Insights (completed, on-time rate, cycle time, throughput vs. the previous period, split by project and person, CSV export), Team (people with presence and workload) and a page per project (lead, timeline with a "today" marker, people, burn-up chart). All dashboards are computed in the browser from the task list.
+- **Glass and motion.** Frosted panels over a wallpaper of drifting ribbons and glass bubbles that shift slightly with the mouse. Six wallpapers, clear or tinted glass and a "reduce transparency" switch in Settings. Each page change plays one entrance where cards surface out of a soft blur. All of it switches off under `prefers-reduced-motion`.
+- **Command menu and undo.** <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd> jumps to any page, project or task. Completing a task shows a toast with Undo that restores its previous state.
 - **Board and list views.** Drag cards between columns and reorder them. Moves update optimistically and persist on the server. Keyboard: <kbd>Space</kbd> picks a card up, arrows move it, <kbd>Enter</kbd> opens it.
 - **Task details**: status, project, priority, assignee, due date, description, subtasks, comments.
 - **Filters and stats**: "assigned to me", priority, full-text search, plus counters for open, due this week, overdue and done in 7 days.
@@ -26,7 +29,7 @@ A real-time kanban tracker for small teams: workspaces with roles and invite lin
 | Frontend | React 19, TypeScript, Vite, TanStack Query, dnd-kit, lucide icons, hand-written CSS with design tokens |
 | Backend  | Node 22+, Express 5, Zod, built-in `node:sqlite` (no native build step), Server-Sent Events |
 | Auth     | bcryptjs, jsonwebtoken, httpOnly cookies |
-| Tests    | `node:test` + supertest: 17 API scenarios covering auth, tasks, workspace isolation, roles, invites, migration and the live stream |
+| Tests    | `node:test` + supertest: 18 API scenarios covering auth, tasks, projects, workspace isolation, roles, invites, migration and the live stream |
 
 ## Getting started
 
@@ -43,7 +46,7 @@ npm run dev
 The SQLite database is created at `server/data/birge.db` and seeded with demo data on first start: a 4-person team workspace and a personal one. To reset it, run `npm run seed`.
 
 ```bash
-npm test            # API tests
+npm test            # API tests (18)
 npm run typecheck   # server + web
 npm run build       # production build of the web app
 npm start           # API that also serves web/dist

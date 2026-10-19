@@ -1,44 +1,40 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronsUpDown, LayoutGrid, LogOut, Plus, Users } from 'lucide-react';
-import { ROLE_RANK, api, type Project, type Workspace } from '../api';
+import { BarChart3, CalendarDays, Check, CheckSquare, ChevronsUpDown, Home, LogOut, Plus, Settings, Users } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ROLE_RANK, api, type Workspace } from '../api';
 import { useInvalidateTasks, useWorkspace } from '../hooks';
-import { useI18n } from '../i18n';
+import { useI18n, type MessageKey } from '../i18n';
+import type { Route } from '../router';
 import { toastError } from '../toast';
-import { SettingsMenu } from './SettingsMenu';
 import { Avatar, Logo, Ring } from './ui';
-import type { Page } from './Workspace';
 
 const SWATCHES = ['#3b5bfd', '#16a34a', '#ff8a5b', '#8b7cff', '#ff7eb6', '#14b8a6'];
 
+type NavPage = Exclude<Route['page'], 'project'>;
+const NAV: { page: NavPage; key: MessageKey; icon: ReactNode }[] = [
+  { page: 'home', key: 'nav.home', icon: <Home size={17} /> },
+  { page: 'tasks', key: 'nav.tasks', icon: <CheckSquare size={17} /> },
+  { page: 'calendar', key: 'nav.calendar', icon: <CalendarDays size={17} /> },
+  { page: 'insights', key: 'nav.insights', icon: <BarChart3 size={17} /> },
+  { page: 'team', key: 'nav.team', icon: <Users size={17} /> },
+  { page: 'settings', key: 'nav.settings', icon: <Settings size={17} /> },
+];
+
 interface Props {
-  projects: Project[];
+  route: Route;
   workspaces: Workspace[];
-  selectedProject?: number;
-  page: Page;
   open: boolean;
   /** Real-time connection state, shown by the logo's dot. */
   live: boolean;
   onSwitchWorkspace: (id: number) => void;
-  onSelectProject: (id: number | undefined) => void;
-  onOpenMembers: () => void;
+  onNavigate: (route: Route) => void;
   onLogout: () => void;
 }
 
-export function Sidebar({
-  projects,
-  workspaces,
-  selectedProject,
-  page,
-  open,
-  live,
-  onSwitchWorkspace,
-  onSelectProject,
-  onOpenMembers,
-  onLogout,
-}: Props) {
+export function Sidebar({ route, workspaces, open, live, onSwitchWorkspace, onNavigate, onLogout }: Props) {
   const { t } = useI18n();
-  const { workspace, api: wsApi, me } = useWorkspace();
+  const { workspace, api: wsApi, me, projects } = useWorkspace();
   const invalidate = useInvalidateTasks();
   const canManage = ROLE_RANK[workspace.role] >= ROLE_RANK.admin;
   const [adding, setAdding] = useState(false);
@@ -51,7 +47,7 @@ export function Sidebar({
       invalidate();
       setAdding(false);
       setName('');
-      onSelectProject(project.id);
+      onNavigate({ page: 'project', id: project.id });
     },
     onError: toastError,
   });
@@ -68,20 +64,20 @@ export function Sidebar({
       <Logo pulse={live} idle={!live} />
       <WorkspaceSwitcher workspaces={workspaces} onSwitch={onSwitchWorkspace} />
 
-      <nav className="nav">
-        <button
-          className={`nav-item${page === 'tasks' && selectedProject === undefined ? ' active' : ''}`}
-          onClick={() => onSelectProject(undefined)}
-        >
-          <LayoutGrid size={17} />
-          <span>{t('nav.allTasks')}</span>
-          <span className="nav-count mono">{totalOpen}</span>
-        </button>
-        <button className={`nav-item${page === 'members' ? ' active' : ''}`} onClick={onOpenMembers}>
-          <Users size={17} />
-          <span>{t('nav.members')}</span>
-          <span className="nav-count mono">{workspace.memberCount}</span>
-        </button>
+      <nav className="nav" aria-label={t('nav.main')}>
+        {NAV.map((item) => (
+          <button
+            key={item.page}
+            className={`nav-item${route.page === item.page ? ' active' : ''}`}
+            aria-current={route.page === item.page ? 'page' : undefined}
+            onClick={() => onNavigate({ page: item.page } as Route)}
+          >
+            {item.icon}
+            <span>{t(item.key)}</span>
+            {item.page === 'tasks' && <span className="nav-count mono">{totalOpen}</span>}
+            {item.page === 'team' && <span className="nav-count mono">{workspace.memberCount}</span>}
+          </button>
+        ))}
       </nav>
 
       <div className="nav-section">
@@ -127,8 +123,9 @@ export function Sidebar({
         {projects.map((p) => (
           <button
             key={p.id}
-            className={`nav-item${page === 'tasks' && selectedProject === p.id ? ' active' : ''}`}
-            onClick={() => onSelectProject(p.id)}
+            className={`nav-item${route.page === 'project' && route.id === p.id ? ' active' : ''}`}
+            aria-current={route.page === 'project' && route.id === p.id ? 'page' : undefined}
+            onClick={() => onNavigate({ page: 'project', id: p.id })}
             style={{ ['--tag' as string]: p.color }}
           >
             <Ring value={p.taskCount - p.openCount} total={p.taskCount} color={p.color} size={17} />
@@ -148,7 +145,6 @@ export function Sidebar({
           </div>
         </div>
         <div className="foot-actions">
-          <SettingsMenu />
           <button className="icon-btn" onClick={onLogout} aria-label={t('nav.signOut')} title={t('nav.signOut')}>
             <LogOut size={17} />
           </button>

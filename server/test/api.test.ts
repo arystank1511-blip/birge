@@ -282,6 +282,29 @@ describe('workspaces', () => {
   });
 });
 
+describe('projects', () => {
+  it('stores description, lead and dates, and validates them', async () => {
+    const { agent, w, project, user } = await withProject('Pia');
+    assert.equal(project.description, '');
+    assert.equal(project.leadId, null);
+
+    const { body: updated } = await agent
+      .patch(w(`/projects/${project.id}`))
+      .send({ description: 'Launch plan', leadId: user.id, startDate: '2026-01-01', dueDate: '2026-02-01' })
+      .expect(200);
+    assert.deepEqual(
+      [updated.description, updated.leadId, updated.startDate, updated.dueDate],
+      ['Launch plan', user.id, '2026-01-01', '2026-02-01'],
+    );
+    assert.equal((await agent.get(w(`/projects/${project.id}`))).body.description, 'Launch plan');
+
+    // The window has to make sense, and the lead has to be on the team.
+    await agent.patch(w(`/projects/${project.id}`)).send({ startDate: '2026-03-01' }).expect(400);
+    const outsider = await signUp('Out');
+    await agent.patch(w(`/projects/${project.id}`)).send({ leadId: outsider.user.id }).expect(400);
+  });
+});
+
 describe('realtime', () => {
   it('streams changes to other members with presence', async () => {
     const owner = await withProject('Olivia');

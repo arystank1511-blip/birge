@@ -1,41 +1,23 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CalendarClock, CircleDot, Columns3, Flag, List, Menu, Plus, Search, Trophy, UserRound } from 'lucide-react';
-import {
-  PRIORITIES,
-  STATUSES,
-  api,
-  workspaceApi,
-  type Priority,
-  type Status,
-  type Task,
-  type TaskFilters,
-  type User,
-  type Workspace as WorkspaceInfo,
-} from '../api';
-import { todayISO } from '../dates';
-import { WorkspaceContext, isTypingTarget, useDebounced, useInvalidateTasks } from '../hooks';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Menu, Moon, Plus, Search, Sun } from 'lucide-react';
+import { api, workspaceApi, type Status, type User, type Workspace as WorkspaceInfo } from '../api';
+import { WorkspaceContext, isTypingTarget, useAppearanceContext } from '../hooks';
 import { useI18n } from '../i18n';
 import { useRealtime } from '../realtime';
-import { toastError } from '../toast';
-import { Board, type Layout } from './Board';
-import { ListView } from './ListView';
-import { MembersPage } from './MembersPage';
+import { routeKey, useRoute, type Route } from '../router';
+import { CalendarPage } from './CalendarPage';
+import { CommandPalette } from './CommandPalette';
+import { HomePage } from './HomePage';
+import { InsightsPage } from './InsightsPage';
 import { NewTaskModal } from './NewTaskModal';
+import { ProjectPage } from './ProjectPage';
+import { SettingsPage } from './SettingsPage';
 import { Sidebar } from './Sidebar';
 import { TaskDrawer } from './TaskDrawer';
-import { Avatar, Select } from './ui';
-
-type View = 'board' | 'list';
-export type Page = 'tasks' | 'members';
-
-function loadView(): View {
-  try {
-    return localStorage.getItem('tl-view') === 'list' ? 'list' : 'board';
-  } catch {
-    return 'board';
-  }
-}
+import { TasksPage } from './TasksPage';
+import { TeamPage } from './TeamPage';
+import { Avatar } from './ui';
 
 interface Props {
   me: User;
@@ -45,36 +27,23 @@ interface Props {
   onLostAccess: (message: string) => void;
 }
 
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
 export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }: Props) {
   const { t } = useI18n();
   const qc = useQueryClient();
-  const invalidate = useInvalidateTasks();
-  const searchRef = useRef<HTMLInputElement>(null);
+  const { theme, setTheme } = useAppearanceContext();
   const wsApi = useMemo(() => workspaceApi(workspace.id), [workspace.id]);
   const ws = workspace.id;
 
-  const [page, setPage] = useState<Page>('tasks');
-  const [projectId, setProjectId] = useState<number | undefined>();
-  const [mine, setMine] = useState(false);
-  const [priority, setPriority] = useState<Priority | undefined>();
-  const [search, setSearch] = useState('');
-  const q = useDebounced(search);
-  const [view, setView] = useState<View>(loadView);
-  const [openTask, setOpenTask] = useState<number | null>(null);
-  const [newTask, setNewTask] = useState<Status | null>(null);
+  const [route, navigate] = useRoute();
+  const [openTaskId, setOpenTaskId] = useState<number | null>(null);
+  const [newTaskPreset, setNewTaskPreset] = useState<{ status?: Status; projectId?: number } | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const filters: TaskFilters = useMemo(() => ({ projectId, mine, priority, q }), [projectId, mine, priority, q]);
-  const tasksKey = ['tasks', ws, filters];
 
   const projects = useQuery({ queryKey: ['projects', ws], queryFn: wsApi.projects });
   const members = useQuery({ queryKey: ['members', ws], queryFn: wsApi.members });
-  const tasks = useQuery({ queryKey: tasksKey, queryFn: () => wsApi.tasks(filters), placeholderData: keepPreviousData });
-  const stats = useQuery({
-    queryKey: ['stats', ws, filters],
-    queryFn: () => wsApi.stats(filters, todayISO()),
-    placeholderData: keepPreviousData,
-  });
 
   const { online, connected } = useRealtime({
     url: wsApi.eventsUrl,
@@ -83,69 +52,33 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
     onLostAccess,
   });
 
-  const projectMap = useMemo(() => new Map((projects.data ?? []).map((p) => [p.id, p])), [projects.data]);
-  const userMap = useMemo(() => new Map((members.data ?? []).map((u) => [u.id, u])), [members.data]);
-  const current = projectId ? projectMap.get(projectId) : undefined;
-  const onlineMembers = online.map((id) => userMap.get(id)).filter((u) => u !== undefined);
+  const go = useCallback(
+    (next: Route) => {
+      navigate(next);
+      setSidebarOpen(false);
+    },
+    [navigate],
+  );
+  const openTask = useCallback((id: number) => setOpenTaskId(id), []);
+  const newTask = useCallback((preset?: { status?: Status; projectId?: number }) => setNewTaskPreset(preset ?? {}), []);
 
-  // The selected project may disappear (deleted by a teammate).
-  useEffect(() => {
-    if (projectId && projects.data && !projectMap.has(projectId)) setProjectId(undefined);
-  }, [projectId, projects.data, projectMap]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('tl-view', view);
-    } catch {
-      // Not critical.
-    }
-  }, [view]);
-
-  // Keyboard shortcuts: "/" focuses search, "n" opens the new task dialog.
+  // Global shortcuts: Ctrl/⌘+K opens the palette, N creates a task.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey || page !== 'tasks') return;
-      if (e.key === '/') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        searchRef.current?.focus();
-      } else if (e.key.toLowerCase() === 'n' && openTask === null && newTask === null) {
+        setPaletteOpen((v) => !v);
+        return;
+      }
+      if (isTypingTarget(e.target) || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key.toLowerCase() === 'n' && openTaskId === null && newTaskPreset === null && !paletteOpen) {
         e.preventDefault();
-        setNewTask('todo');
+        setNewTaskPreset({});
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [openTask, newTask, page]);
-
-  const move = useMutation({
-    mutationFn: ({ id, status, afterId, beforeId }: { id: number; status: Status; afterId: number | null; beforeId: number | null }) =>
-      wsApi.moveTask(id, status, afterId, beforeId),
-    onError: toastError,
-    onSettled: invalidate,
-  });
-
-  const handleMove = (id: number, status: Status, layout: Layout) => {
-    // Optimistically apply the new layout so the card doesn't jump back while the request is in flight.
-    qc.cancelQueries({ queryKey: tasksKey });
-    qc.setQueryData<Task[]>(tasksKey, (old) =>
-      old?.map((task) => {
-        for (const s of STATUSES) {
-          const index = layout[s].indexOf(task.id);
-          if (index >= 0) return { ...task, status: s, position: index };
-        }
-        return task;
-      }),
-    );
-    const column = layout[status];
-    const i = column.indexOf(id);
-    move.mutate({ id, status, afterId: column[i - 1] ?? null, beforeId: column[i + 1] ?? null });
-  };
-
-  const toggleDone = useMutation({
-    mutationFn: (task: Task) => wsApi.updateTask(task.id, { status: task.status === 'done' ? 'todo' : 'done' }),
-    onSuccess: invalidate,
-    onError: toastError,
-  });
+  }, [openTaskId, newTaskPreset, paletteOpen]);
 
   const logout = async () => {
     await api.logout().catch(() => undefined);
@@ -153,193 +86,113 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
     qc.setQueryData(['me'], null);
   };
 
-  const s = stats.data;
-  const statTiles = [
-    { label: t('stats.open'), value: s?.open, icon: <CircleDot size={16} />, tone: '' },
-    { label: t('stats.dueWeek'), value: s?.dueThisWeek, icon: <CalendarClock size={16} />, tone: 'soon' },
-    { label: t('stats.overdue'), value: s?.overdue, icon: <AlertTriangle size={16} />, tone: s?.overdue ? 'danger' : '' },
-    { label: t('stats.done7'), value: s?.doneThisWeek, icon: <Trophy size={16} />, tone: 'accent' },
-  ];
-  const hasFilters = mine || priority || search;
+  const memberList = members.data ?? [];
+  const onlineMembers = online.map((id) => memberList.find((m) => m.id === id)).filter((m) => m !== undefined);
 
-  const presence = (
-    <div className="presence" title={connected ? t('head.liveHint') : t('head.reconnecting')}>
-      <span className={`live-dot${connected ? ' on' : ''}`} />
-      <span className="live-label hide-sm">{connected ? t('head.live') : t('head.reconnecting')}</span>
-      {onlineMembers.length > 0 && (
-        <div className="avatar-stack" aria-label={`${t('head.online')}: ${onlineMembers.map((u) => u.name).join(', ')}`}>
-          {onlineMembers.slice(0, 4).map((u) => (
-            <Avatar key={u.id} user={u} size={26} />
-          ))}
-          {onlineMembers.length > 4 && <span className="avatar avatar-more">+{onlineMembers.length - 4}</span>}
-        </div>
-      )}
-    </div>
-  );
+  let page;
+  switch (route.page) {
+    case 'tasks':
+      page = <TasksPage assignee={route.assignee} />;
+      break;
+    case 'calendar':
+      page = <CalendarPage />;
+      break;
+    case 'insights':
+      page = <InsightsPage />;
+      break;
+    case 'team':
+      page = <TeamPage />;
+      break;
+    case 'settings':
+      page = <SettingsPage onLogout={logout} />;
+      break;
+    case 'project':
+      page = <ProjectPage id={route.id} />;
+      break;
+    default:
+      page = <HomePage />;
+  }
 
   return (
-    <WorkspaceContext.Provider value={{ workspace, api: wsApi, me, members: members.data ?? [] }}>
+    <WorkspaceContext.Provider
+      value={{
+        workspace,
+        api: wsApi,
+        me,
+        members: memberList,
+        projects: projects.data ?? [],
+        online,
+        navigate: go,
+        openTask,
+        newTask,
+      }}
+    >
       <div className="shell">
         <Sidebar
-          projects={projects.data ?? []}
+          route={route}
           workspaces={workspaces}
-          selectedProject={projectId}
-          page={page}
           open={sidebarOpen}
           live={connected}
           onSwitchWorkspace={onSwitch}
-          onSelectProject={(id) => {
-            setProjectId(id);
-            setPage('tasks');
-            setSidebarOpen(false);
-          }}
-          onOpenMembers={() => {
-            setPage('members');
-            setSidebarOpen(false);
-          }}
+          onNavigate={go}
           onLogout={logout}
         />
         {sidebarOpen && <div className="backdrop backdrop-mobile" onClick={() => setSidebarOpen(false)} />}
 
         <main className="main">
-          <header className="page-head">
+          <div className="topbar">
             <button className="icon-btn mobile-only" onClick={() => setSidebarOpen(true)} aria-label={t('nav.openMenu')}>
               <Menu size={18} />
             </button>
-            <div className="page-title">
-              <p className="eyebrow">
-                {page === 'tasks' && current ? (
-                  <>
-                    <i style={{ background: current.color }} /> {t('head.project')}
-                  </>
-                ) : (
-                  workspace.name
-                )}
-              </p>
-              <h1>{page === 'members' ? t('members.title') : (current?.name ?? t('nav.allTasks'))}</h1>
-            </div>
             <span className="spacer" />
-            {presence}
-            {page === 'tasks' && (
-              <>
-                <div className="segmented" role="tablist" aria-label={t('head.view')}>
-                  <button role="tab" aria-selected={view === 'board'} className={view === 'board' ? 'on' : ''} onClick={() => setView('board')}>
-                    <Columns3 size={15} /> <span className="hide-sm">{t('head.board')}</span>
-                  </button>
-                  <button role="tab" aria-selected={view === 'list'} className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>
-                    <List size={15} /> <span className="hide-sm">{t('head.list')}</span>
-                  </button>
-                </div>
-                <button className="btn btn-accent" onClick={() => setNewTask('todo')} aria-label={t('head.newTask')}>
-                  <Plus size={17} /> <span className="hide-sm">{t('head.newTask')}</span>
-                  <kbd className="hide-sm">N</kbd>
-                </button>
-              </>
-            )}
-          </header>
-
-          {page === 'members' ? (
-            <MembersPage online={online} />
-          ) : (
-            <>
-              <section className="stats">
-                {statTiles.map((tile) => (
-                  <div key={tile.label} className={`stat glass stat-${tile.tone}`}>
-                    <span className="stat-icon">{tile.icon}</span>
-                    <span className="stat-label">{tile.label}</span>
-                    <strong className="stat-value mono">{tile.value ?? '–'}</strong>
-                  </div>
-                ))}
-              </section>
-
-              <section className="filters glass">
-                <button className={`chip${mine ? ' chip-on' : ''}`} onClick={() => setMine((v) => !v)} aria-pressed={mine}>
-                  <UserRound size={15} /> {t('filter.mine')}
-                </button>
-                <Select
-                  className="chip-select"
-                  value={priority ?? ''}
-                  onChange={(e) => setPriority((e.target.value || undefined) as Priority | undefined)}
-                  aria-label={t('task.priority')}
-                  icon={<Flag size={15} />}
-                >
-                  <option value="">{t('filter.anyPriority')}</option>
-                  {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>
-                      {t(`priority.${p}`)}
-                    </option>
-                  ))}
-                </Select>
-                <label className="search">
-                  <Search size={16} />
-                  <input
-                    ref={searchRef}
-                    type="search"
-                    placeholder={t('filter.search')}
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    aria-label={t('filter.search')}
-                  />
-                  <kbd>/</kbd>
-                </label>
-                {hasFilters && (
-                  <button
-                    className="link link-muted"
-                    onClick={() => {
-                      setMine(false);
-                      setPriority(undefined);
-                      setSearch('');
-                    }}
-                  >
-                    {t('filter.clear')}
-                  </button>
+            <div className="topbar-pill glass">
+              <button className="topbar-search" onClick={() => setPaletteOpen(true)}>
+                <Search size={15} />
+                <span className="hide-sm">{t('palette.search')}</span>
+                <kbd className="hide-sm">{isMac ? '⌘K' : 'Ctrl K'}</kbd>
+              </button>
+              <span className="presence-inline" title={connected ? t('head.liveHint') : t('head.reconnecting')}>
+                <span className={`live-dot${connected ? ' on' : ''}`} />
+                {onlineMembers.length > 0 && (
+                  <span className="avatar-stack" aria-label={`${t('head.online')}: ${onlineMembers.map((u) => u.name).join(', ')}`}>
+                    {onlineMembers.slice(0, 3).map((u) => (
+                      <Avatar key={u.id} user={u} size={24} />
+                    ))}
+                  </span>
                 )}
-              </section>
+              </span>
+              <button className="icon-btn" onClick={() => newTask()} aria-label={t('head.newTask')} title={t('head.newTask')}>
+                <Plus size={17} />
+              </button>
+              <button
+                className="icon-btn"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                aria-label={theme === 'dark' ? t('palette.toLight') : t('palette.toDark')}
+                title={theme === 'dark' ? t('palette.toLight') : t('palette.toDark')}
+              >
+                {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+              </button>
+            </div>
+          </div>
 
-              {tasks.isError ? (
-                <div className="empty glass">
-                  {t('filter.loadError')}{' '}
-                  <button className="link" onClick={() => tasks.refetch()}>
-                    {t('filter.retry')}
-                  </button>
-                </div>
-              ) : !tasks.data ? (
-                <div className="board">
-                  {STATUSES.map((status) => (
-                    <div key={status} className="column skeleton" />
-                  ))}
-                </div>
-              ) : view === 'board' ? (
-                <Board
-                  tasks={tasks.data}
-                  projects={projectMap}
-                  users={userMap}
-                  onOpen={setOpenTask}
-                  onAdd={setNewTask}
-                  onMove={handleMove}
-                />
-              ) : (
-                <ListView
-                  tasks={tasks.data}
-                  projects={projectMap}
-                  users={userMap}
-                  onOpen={setOpenTask}
-                  onToggleDone={(task) => toggleDone.mutate(task)}
-                />
-              )}
-            </>
-          )}
+          {/* Keyed by route so each navigation replays one orchestrated entrance. */}
+          <div className="page" key={routeKey(route)}>
+            {page}
+          </div>
         </main>
 
-        {openTask !== null && <TaskDrawer taskId={openTask} projects={projects.data ?? []} onClose={() => setOpenTask(null)} />}
-        {newTask !== null && (
+        {openTaskId !== null && (
+          <TaskDrawer taskId={openTaskId} projects={projects.data ?? []} onClose={() => setOpenTaskId(null)} />
+        )}
+        {newTaskPreset !== null && (
           <NewTaskModal
-            initialStatus={newTask}
-            defaultProjectId={projectId}
+            initialStatus={newTaskPreset.status ?? 'todo'}
+            defaultProjectId={newTaskPreset.projectId}
             projects={projects.data ?? []}
-            onClose={() => setNewTask(null)}
+            onClose={() => setNewTaskPreset(null)}
           />
         )}
+        {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
       </div>
     </WorkspaceContext.Provider>
   );

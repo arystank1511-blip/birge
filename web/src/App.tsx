@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { AuthScreen } from './components/AuthScreen';
-import { DotGrid } from './components/DotGrid';
+import { Wallpaper } from './components/Wallpaper';
 import { JoinScreen } from './components/JoinScreen';
 import { Logo } from './components/ui';
 import { WorkspaceGate, rememberWorkspace } from './components/WorkspaceGate';
@@ -39,8 +39,7 @@ export default function App() {
 
   return (
     <AppearanceContext.Provider value={appearance}>
-      <div className="aurora" aria-hidden="true" />
-      <DotGrid />
+      <Wallpaper />
       {screen}
       <Toaster />
     </AppearanceContext.Provider>

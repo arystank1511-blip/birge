@@ -6,6 +6,7 @@ import App from './App';
 import { I18nProvider } from './i18n';
 import './styles.css';
 import './themes.css';
+import './pages.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

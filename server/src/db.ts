@@ -49,6 +49,10 @@ CREATE TABLE IF NOT EXISTS projects (
   workspace_id INTEGER REFERENCES workspaces(id) ON DELETE CASCADE,
   name         TEXT NOT NULL,
   color        TEXT NOT NULL,
+  description  TEXT NOT NULL DEFAULT '',
+  lead_id      INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  start_date   TEXT,
+  due_date     TEXT,
   created_by   INTEGER REFERENCES users(id) ON DELETE SET NULL,
   created_at   TEXT NOT NULL
 );
@@ -120,6 +124,18 @@ function migrate(db: DB) {
     });
   }
   db.exec('CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id)');
+
+  // Project details added later: description, lead and a start/due window.
+  const projectColumns = new Set((db.prepare('PRAGMA table_info(projects)').all() as { name: string }[]).map((c) => c.name));
+  const added: Record<string, string> = {
+    description: "TEXT NOT NULL DEFAULT ''",
+    lead_id: 'INTEGER REFERENCES users(id) ON DELETE SET NULL',
+    start_date: 'TEXT',
+    due_date: 'TEXT',
+  };
+  for (const [column, type] of Object.entries(added)) {
+    if (!projectColumns.has(column)) db.exec(`ALTER TABLE projects ADD COLUMN ${column} ${type}`);
+  }
 }
 
 export function tx<T>(db: DB, fn: () => T): T {

@@ -48,9 +48,16 @@ export interface Project {
   id: number;
   name: string;
   color: string;
+  description: string;
+  leadId: number | null;
+  startDate: string | null;
+  dueDate: string | null;
+  createdAt: string;
   taskCount: number;
   openCount: number;
 }
+
+export type ProjectInput = Partial<Pick<Project, 'name' | 'color' | 'description' | 'leadId' | 'startDate' | 'dueDate'>>;
 
 export interface Task {
   id: number;
@@ -97,6 +104,8 @@ export interface Stats {
 export interface TaskFilters {
   projectId?: number;
   mine?: boolean;
+  /** A specific teammate; ignored when `mine` is set. */
+  assigneeId?: number;
   priority?: Priority;
   q?: string;
 }
@@ -162,7 +171,7 @@ function query(params: Record<string, string | number | undefined>) {
 
 const filterParams = (f: TaskFilters) => ({
   projectId: f.projectId,
-  assignee: f.mine ? 'me' : undefined,
+  assignee: f.mine ? 'me' : f.assigneeId,
   priority: f.priority,
   q: f.q?.trim(),
 });
@@ -204,7 +213,9 @@ export function workspaceApi(workspaceId: number) {
     revokeInvite: (id: number) => request<void>('DELETE', `${base}/invites/${id}`),
 
     projects: () => request<Project[]>('GET', `${base}/projects`),
+    project: (id: number) => request<Project>('GET', `${base}/projects/${id}`),
     createProject: (name: string, color: string) => request<Project>('POST', `${base}/projects`, { name, color }),
+    updateProject: (id: number, patch: ProjectInput) => request<Project>('PATCH', `${base}/projects/${id}`, patch),
 
     tasks: (f: TaskFilters) => request<Task[]>('GET', `${base}/tasks${query(filterParams(f))}`),
     stats: (f: TaskFilters, today: string) => request<Stats>('GET', `${base}/stats${query({ ...filterParams(f), today })}`),
