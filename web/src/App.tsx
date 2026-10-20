@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 import { AuthScreen } from './components/AuthScreen';
+import { LiquidGlassDefs } from './components/LiquidGlassDefs';
 import { Wallpaper } from './components/Wallpaper';
 import { JoinScreen } from './components/JoinScreen';
 import { Logo } from './components/ui';
@@ -40,6 +41,7 @@ export default function App() {
   return (
     <AppearanceContext.Provider value={appearance}>
       <Wallpaper />
+      <LiquidGlassDefs />
       {screen}
       <Toaster />
     </AppearanceContext.Provider>

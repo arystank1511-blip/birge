@@ -7,6 +7,7 @@ import { I18nProvider } from './i18n';
 import './styles.css';
 import './themes.css';
 import './pages.css';
+import './features.css';
 import './liquid.css';
 
 const queryClient = new QueryClient({

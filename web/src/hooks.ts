@@ -15,6 +15,8 @@ export interface WorkspaceContextValue {
   online: number[];
   navigate: (route: Route) => void;
   openTask: (id: number) => void;
+  /** Opens a teammate's profile panel. */
+  openMember: (id: number) => void;
   newTask: (preset?: { status?: Status; projectId?: number }) => void;
 }
 

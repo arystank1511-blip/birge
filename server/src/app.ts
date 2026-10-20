@@ -10,6 +10,7 @@ import { projectsRouter } from './routes/projects';
 import { statsRouter } from './routes/stats';
 import { tasksRouter } from './routes/tasks';
 import { invitesRouter, requireMember, workspaceRouter, workspacesRouter } from './routes/workspaces';
+import { meRouter } from './routes/me';
 
 export interface AppOptions extends Partial<AuthOptions> {
   jwtSecret: string;
@@ -47,6 +48,7 @@ export function createApp(db: DB, opts: AppOptions) {
   app.use('/api/invites', invitesRouter(db, realtime, authenticate));
 
   app.use('/api', authenticate);
+  app.use('/api/me', meRouter(db, realtime));
   app.use('/api/workspaces', workspacesRouter(db));
 
   // Everything below is scoped to one workspace the caller belongs to.

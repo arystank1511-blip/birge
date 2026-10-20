@@ -12,12 +12,14 @@ import {
   isOpen,
   isOverdue,
   lastDays,
+  localDay,
   onTimeRate,
   percentChange,
-  toCsv,
   workload,
 } from '../metrics';
+import { exportTasksCsv } from '../csv';
 import { Donut, LineChart } from './charts';
+import { CAPACITY } from './MemberPanel';
 import { Avatar, STATUS_COLOR } from './ui';
 
 const RANGES = [7, 30, 90] as const;
@@ -36,7 +38,7 @@ function Delta({ value, invert = false }: { value: number | null; invert?: boole
 
 export function InsightsPage() {
   const { t } = useI18n();
-  const { workspace, projects, members, me } = useWorkspace();
+  const { workspace, projects, members, me, openTask, openMember } = useWorkspace();
   const { data: tasks = [] } = useAllTasks();
   const [range, setRange] = useState<Range>(30);
   const today = todayISO();
@@ -76,36 +78,23 @@ export function InsightsPage() {
       overdue: tasks.filter((task) => isOverdue(task, today)).length,
       byProject,
       people,
-      maxLoad: Math.max(1, ...people.map((p) => p.load)),
+      over: people.filter((p) => p.load > CAPACITY).length,
+      onTimeCount: done.filter((task) => task.dueDate && task.completedAt && localDay(task.completedAt) <= task.dueDate).length,
+      lateCount: done.filter((task) => task.dueDate && task.completedAt && localDay(task.completedAt) > task.dueDate).length,
+      // Open work that has waited longest: overdue days if late, otherwise age since creation.
+      slowest: tasks
+        .filter(isOpen)
+        .map((task) => {
+          const age = Math.floor((Date.parse(today) - Date.parse(localDay(task.createdAt))) / 86_400_000);
+          const late = task.dueDate && task.dueDate < today ? Math.floor((Date.parse(today) - Date.parse(task.dueDate)) / 86_400_000) : 0;
+          return { task, age, late };
+        })
+        .sort((a, b) => b.late - a.late || b.age - a.age)
+        .slice(0, 3),
     };
   }, [tasks, projects, members, range, today]);
 
-  const exportCsv = () => {
-    const projectName = new Map(projects.map((p) => [p.id, p.name]));
-    const memberName = new Map(members.map((m) => [m.id, m.name]));
-    const rows = [
-      ['id', 'title', 'project', 'status', 'priority', 'assignee', 'due_date', 'created_at', 'completed_at'],
-      ...tasks.map((task) => [
-        task.id,
-        task.title,
-        projectName.get(task.projectId) ?? '',
-        task.status,
-        task.priority,
-        task.assigneeId ? (memberName.get(task.assigneeId) ?? '') : '',
-        task.dueDate,
-        task.createdAt,
-        task.completedAt,
-      ]),
-    ];
-    // BOM so Excel opens Cyrillic and Kazakh text correctly.
-    const blob = new Blob(['﻿' + toCsv(rows)], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `birge-${workspace.name.toLowerCase().replace(/\s+/g, '-')}-${today}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportCsv = () => exportTasksCsv(tasks, projects, members, workspace.name);
 
   const labels = data.days.map(shortDay);
   const total = data.done.length;
@@ -209,30 +198,87 @@ export function InsightsPage() {
           </div>
         </article>
 
+        <article className="panel glass reveal insights-ontime">
+          <header className="panel-head">
+            <div>
+              <h2>{t('insights.onTime')}</h2>
+              <p className="muted small">{t('insights.onTimeHint', { n: range })}</p>
+            </div>
+          </header>
+          <p className="big-number">
+            <strong className="mono">{data.onTime === null ? '–' : Math.round(data.onTime * 100)}</strong>
+            <span className="muted">{t('insights.onTimeOf')}</span>
+          </p>
+          <div className="ontime-bar" aria-hidden="true">
+            <span className="ontime-good" style={{ flexGrow: data.onTimeCount || 0.0001 }} />
+            <span className="ontime-late" style={{ flexGrow: data.lateCount }} />
+          </div>
+          <p className="ontime-legend small">
+            <span>
+              <i className="dot-good" /> <strong className="mono">{data.onTimeCount}</strong> {t('insights.inTime')}
+            </span>
+            <span>
+              <i className="dot-late" /> <strong className="mono">{data.lateCount}</strong> {t('insights.late')}
+            </span>
+          </p>
+          <h3 className="sub-heading">{t('insights.slowest')}</h3>
+          <ul className="slow-list">
+            {data.slowest.map(({ task, age, late }) => {
+              const who = members.find((m) => m.id === task.assigneeId);
+              const project = projects.find((p) => p.id === task.projectId);
+              return (
+                <li key={task.id}>
+                  <Avatar user={who} size={28} />
+                  <button className="load-text" onClick={() => openTask(task.id)}>
+                    <strong className="truncate">{task.title}</strong>
+                    <span className="muted small truncate">
+                      {project?.name}
+                      {who ? ` · ${who.name.split(' ')[0]}` : ''}
+                    </span>
+                  </button>
+                  <span className={`slow-age mono${late ? ' is-late' : ''}`}>
+                    <strong>{t('insights.daysShort', { n: late || age })}</strong>
+                    <small>{late ? t('insights.lateWord') : t('insights.openWord')}</small>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </article>
+
         <article className="panel glass reveal insights-people">
           <header className="panel-head">
             <div>
               <h2>{t('insights.workload')}</h2>
-              <p className="muted small">{t('insights.workloadHint')}</p>
+              <p className="muted small">{t('insights.capacityHint', { n: CAPACITY })}</p>
             </div>
+            <span className={`status-pill ${data.over ? 'status-pill-statusLate' : 'status-pill-statusActive'}`}>
+              {data.over ? t('insights.overCapacity', { n: data.over }) : t('insights.withinCapacity')}
+            </span>
           </header>
-          <ul className="load-list">
-            {data.people.map(({ member, load, open, done }) => (
-              <li key={member.id}>
-                <Avatar user={member} size={28} />
-                <div className="load-text">
-                  <strong className="truncate">
-                    {member.name} {member.id === me.id && <span className="muted">{t('task.you')}</span>}
-                  </strong>
-                  <span className="muted small">
-                    {t('insights.openDone', { open, done })}
+          <ul className="load-list capacity-list">
+            {data.people.map(({ member, load, open, done }) => {
+              // The bar spans 1.5× capacity so overload stays visible; the tick marks 100%.
+              const scale = CAPACITY * 1.5;
+              return (
+                <li key={member.id}>
+                  <Avatar user={member} size={28} />
+                  <button className="load-text" onClick={() => openMember(member.id)}>
+                    <strong className="truncate">
+                      {member.name} {member.id === me.id && <span className="muted">{t('task.you')}</span>}
+                    </strong>
+                    <span className="muted small">{t('insights.openDone', { open, done })}</span>
+                  </button>
+                  <div className="capacity-bar" aria-label={`${load} / ${CAPACITY}`}>
+                    <span className={load > CAPACITY ? 'over' : ''} style={{ width: `${Math.min(1, load / scale) * 100}%` }} />
+                    <i style={{ left: `${(CAPACITY / scale) * 100}%` }} />
+                  </div>
+                  <span className="mono small capacity-num">
+                    <strong>{load}</strong>/{CAPACITY}
                   </span>
-                </div>
-                <div className="load-bar" aria-hidden="true">
-                  <span style={{ width: `${(load / data.maxLoad) * 100}%` }} />
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </article>
 

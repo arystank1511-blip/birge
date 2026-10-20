@@ -28,9 +28,30 @@ const initials = (name: string) =>
     .slice(0, 2)
     .toUpperCase();
 
-export function Avatar({ user, size = 24 }: { user: Pick<User, 'name' | 'color'> | null | undefined; size?: number }) {
+export function Avatar({
+  user,
+  size = 24,
+}: {
+  user: (Pick<User, 'name' | 'color'> & { avatar?: string | null }) | null | undefined;
+  size?: number;
+}) {
   if (!user) {
     return <span className="avatar avatar-empty" style={{ width: size, height: size }} title="Unassigned" />;
+  }
+  if (user.avatar) {
+    return (
+      <img
+        className="avatar avatar-photo"
+        src={user.avatar}
+        alt={user.name}
+        title={user.name}
+        width={size}
+        height={size}
+        style={{ width: size, height: size }}
+        loading="lazy"
+        decoding="async"
+      />
+    );
   }
   return (
     <span

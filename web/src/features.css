@@ -1,0 +1,976 @@
+/* Styles for the second wave of screens: settings with a section rail, projects overview, the member
+   profile panel, focus timer, "right now" presence and the richer insights cards. Loaded after
+   pages.css so the layout overrides here win, and before liquid.css so glass still paints on top. */
+
+/* ───────────── Shared bits ───────────── */
+.avatar-photo {
+  object-fit: cover;
+  background: var(--field);
+}
+.presence-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--glass-strong);
+  background: var(--line-strong);
+}
+.presence-online {
+  background: #22c55e;
+}
+.presence-focus {
+  background: #f97316;
+}
+.status-dot.status-online {
+  background: #22c55e;
+}
+.status-dot.status-focus {
+  background: #f97316;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #f97316 22%, transparent);
+}
+.status-dot.status-offline {
+  background: var(--line-strong);
+}
+.status-pill-statusEmpty {
+  background: var(--field-hover);
+  color: var(--muted);
+}
+.count-danger {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+.more-link {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.section-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+}
+.focus-track {
+  fill: none;
+  stroke: var(--field-hover);
+  stroke-width: 5;
+}
+.segmented-sm button {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+/* Round checkbox used in the calendar side lists. */
+.check-round {
+  border-radius: 50%;
+}
+
+/* ───────────── Calendar: right column ───────────── */
+.calendar-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+}
+.calendar-side-col > .calendar-side {
+  flex: 0 1 auto;
+}
+/* Today's deadlines take whatever height the top card leaves. */
+.calendar-side-col > .calendar-today {
+  flex: 1 1 auto;
+}
+
+/* ───────────── Home additions ───────────── */
+.dash-focus {
+  grid-column: span 4;
+}
+.dash-projects {
+  grid-column: span 7;
+}
+.dash-now {
+  grid-column: span 5;
+}
+.focus-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.dash-focus .panel-head {
+  flex-wrap: wrap;
+}
+.focus-dial {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+}
+.focus-dial svg {
+  width: 100%;
+  height: 100%;
+}
+.focus-dial .focus-track {
+  stroke-width: 8;
+}
+.focus-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear;
+}
+.focus-time {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 2px;
+}
+.focus-time strong {
+  font-size: 23px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.focus-time span {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.focus-side {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+.focus-side select {
+  width: 100%;
+}
+.focus-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The running timer, pinned to the top bar. */
+.focus-island {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 260px;
+  height: 34px;
+  padding: 0 6px 0 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 92%, #000);
+  color: var(--accent-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  box-shadow: 0 10px 24px -12px var(--accent);
+  animation: island-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.focus-island strong {
+  font-size: 13px;
+}
+.focus-island.paused {
+  background: var(--glass-strong);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.island-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  color: inherit;
+}
+.focus-island.paused .island-btn {
+  background: var(--field-hover);
+}
+@keyframes island-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+.now-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 10px 16px;
+}
+.now-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ───────────── Settings ───────────── */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.settings-nav {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-lg);
+}
+.settings-me {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.settings-nav nav {
+  display: grid;
+  gap: 2px;
+}
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-2);
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.settings-nav-item:hover {
+  background: var(--field-hover);
+  color: var(--text);
+}
+.settings-sections {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.settings-sections > section,
+.settings-sections > div {
+  scroll-margin-top: 12px;
+}
+.settings-page .settings-sections .panel {
+  max-width: none;
+}
+.settings-page .setting-row .setting-text {
+  flex: 1;
+  min-width: 0;
+}
+.setting-text p {
+  margin-top: 2px;
+}
+.setting-action {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+.setting-action:hover {
+  background: var(--field);
+}
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 4px 0 6px;
+}
+.avatar-edit {
+  position: relative;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.avatar-edit .avatar {
+  font-size: 30px;
+  transition: filter 0.2s;
+}
+.avatar-edit:hover .avatar {
+  filter: brightness(0.92);
+}
+.avatar-edit-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 3px var(--glass-strong);
+}
+.profile-actions {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.profile-name {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.profile-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.settings-list {
+  margin: 0;
+  display: grid;
+}
+.settings-list > div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.settings-list dt {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.settings-list dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.settings-list .inline-form {
+  display: flex;
+  gap: 8px;
+}
+.settings-list .inline-form .input {
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+}
+.profile-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.stepper-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.stepper {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--field);
+}
+.stepper-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.stepper-body strong {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+.stepper-body small {
+  font-size: 13px;
+  color: var(--muted);
+  margin-left: 3px;
+  letter-spacing: 0;
+}
+
+/* ───────────── Projects overview ───────────── */
+.new-project {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+}
+.new-project .field-grow {
+  flex: 1 1 240px;
+}
+.new-project .swatches {
+  padding-bottom: 6px;
+}
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.project-card:hover {
+  transform: translateY(-2px);
+}
+.project-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.project-badge-sm {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: 16px;
+}
+.project-card-title {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.project-card-name {
+  text-align: left;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.project-card-name:hover {
+  color: var(--accent-text);
+}
+.project-card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pin {
+  color: var(--muted);
+}
+.pin.on {
+  color: #f5a524;
+}
+.pin.on svg {
+  fill: currentColor;
+}
+.project-next {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--field);
+}
+.project-next-ring {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.project-next-ring svg {
+  width: 100%;
+  height: 100%;
+}
+.project-next-ring > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.project-next-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.project-next-text .link {
+  justify-self: start;
+}
+.project-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+.project-card-foot .muted.small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ───────────── Member profile panel ───────────── */
+.member-panel {
+  overflow: hidden;
+}
+.member-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+}
+.member-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 24px 20px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--hero) 22%, transparent), transparent 70%);
+}
+.member-hero .avatar {
+  font-size: 26px;
+}
+.member-hero .presence-dot {
+  width: 16px;
+  height: 16px;
+  right: 2px;
+  bottom: 2px;
+  box-shadow: 0 0 0 3px var(--glass-strong);
+}
+.member-hero-text {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.member-hero-text h2 {
+  font-family: var(--font-display, inherit);
+  font-size: 21px;
+  letter-spacing: -0.02em;
+  padding-right: 36px;
+}
+.member-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.member-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.member-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 24px 28px;
+  display: grid;
+  align-content: start;
+  gap: 22px;
+}
+.member-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.member-tile {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--field);
+  min-width: 0;
+}
+.member-tile-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.member-tile-value svg {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.member-load {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+}
+.member-ring {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+}
+.member-ring svg {
+  width: 100%;
+  height: 100%;
+}
+.member-ring .focus-track {
+  stroke-width: 7;
+}
+.member-ring > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 600;
+}
+.member-ring-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.member-ring-arc.over {
+  stroke: var(--danger);
+}
+.member-load-list {
+  flex: 1;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.member-load-list > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+.member-load-list dt {
+  color: var(--muted);
+}
+.member-load-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+.member-load-list small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.member-section {
+  display: grid;
+  gap: 10px;
+}
+.member-section .sub-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.member-tasks,
+.member-week {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.member-tasks button,
+.member-week button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: left;
+  transition: background 0.15s;
+}
+.member-tasks button:hover,
+.member-week button:hover {
+  background: var(--field-hover);
+}
+.project-chip {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.member-task-text {
+  flex: 1;
+  display: grid;
+  min-width: 0;
+}
+.member-task-text strong {
+  font-size: 13.5px;
+  font-weight: 550;
+}
+.member-task-text .small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.date-chip {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  line-height: 1.05;
+}
+.date-chip small {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.date-chip strong {
+  font-size: 16px;
+}
+
+/* ───────────── Team additions ───────────── */
+.person-open {
+  cursor: pointer;
+  border-radius: 8px;
+}
+.person-open:hover strong {
+  color: var(--accent-text);
+}
+.person-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ───────────── Insights additions ───────────── */
+.insights-ontime {
+  grid-column: span 5;
+}
+.insights-people {
+  grid-column: span 7;
+}
+.insights-status {
+  grid-column: 1 / -1;
+}
+.ontime-bar {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ontime-good {
+  background: #22c55e;
+  border-radius: 10px;
+  transition: flex-grow 0.6s;
+}
+.ontime-late {
+  background: var(--danger);
+  border-radius: 10px;
+  transition: flex-grow 0.6s;
+}
+.ontime-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: var(--muted);
+}
+.ontime-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ontime-legend strong {
+  color: var(--text);
+}
+.dot-good,
+.dot-late {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+.dot-late {
+  background: var(--danger);
+}
+.slow-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.slow-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.slow-list .load-text {
+  text-align: left;
+}
+.slow-age {
+  display: grid;
+  justify-items: end;
+  line-height: 1.15;
+}
+.slow-age strong {
+  font-size: 14px;
+}
+.slow-age small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.slow-age.is-late strong {
+  color: var(--danger);
+}
+.capacity-list .load-text {
+  text-align: left;
+}
+.capacity-list li {
+  grid-template-columns: auto minmax(0, 1fr) minmax(90px, 34%) auto;
+}
+.capacity-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--field-hover);
+}
+.capacity-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 8px;
+  background: var(--accent);
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.capacity-bar span.over {
+  background: var(--danger);
+}
+.capacity-bar i {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--text-2);
+  opacity: 0.5;
+}
+.capacity-num {
+  color: var(--muted);
+  min-width: 40px;
+  text-align: right;
+}
+.capacity-num strong {
+  color: var(--text);
+}
+
+/* ───────────── Responsive ───────────── */
+@media (max-width: 1180px) {
+  .dash-focus {
+    grid-column: span 6;
+  }
+  .dash-projects,
+  .dash-now,
+  .insights-ontime,
+  .insights-people {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 860px) {
+  .dash-focus {
+    grid-column: 1 / -1;
+  }
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The section rail becomes a horizontal strip of chips. */
+  .settings-nav {
+    position: static;
+    padding: 8px;
+  }
+  .settings-me {
+    display: none;
+  }
+  .settings-nav nav {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 4px;
+  }
+  .settings-nav-item {
+    width: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .settings-list > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+  .stepper-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .projects-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .member-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .focus-island > span {
+    display: none;
+  }
+  .capacity-list li {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .capacity-list .capacity-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .focus-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .focus-dial {
+    align-self: center;
+  }
+  .profile-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-buttons {
+    justify-content: center;
+  }
+  .member-load {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .member-ring {
+    align-self: center;
+  }
+}

@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpRight, Copy, Link2, LogOut, Trash2, UserPlus, X } from 'lucide-react';
+import { ArrowUpRight, Clock, Copy, Link2, LogOut, Trash2, UserPlus, X } from 'lucide-react';
 import { ROLE_RANK, type Invite, type Member, type Role } from '../api';
 import { formatDate, todayISO } from '../dates';
 import { useAllTasks, useWorkspace } from '../hooks';
 import { useI18n } from '../i18n';
 import { completedBetween, isOpen, lastDays, workload } from '../metrics';
 import { toast, toastError } from '../toast';
+import { presenceOf } from './FocusUi';
+import { localTime } from './MemberPanel';
 import { Avatar, Select } from './ui';
 
 const EXPIRY_OPTIONS = [1, 7, 30];
@@ -14,7 +16,7 @@ type RoleFilter = 'all' | Role;
 
 export function TeamPage() {
   const { t } = useI18n();
-  const { workspace, api, me, members, online, navigate } = useWorkspace();
+  const { workspace, api, me, members, online, navigate, openMember } = useWorkspace();
   const { data: tasks = [] } = useAllTasks();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<RoleFilter>('all');
@@ -105,14 +107,16 @@ export function TeamPage() {
           const done = doneThisWeek.filter((task) => task.assigneeId === m.id).length;
           const load = loads.get(m.id) ?? 0;
           const isOnline = online.includes(m.id);
+          const presence = presenceOf(m, online);
+          const zone = localTime(m.timezone);
           return (
             <article key={m.id} className="person glass reveal">
               <header className="person-head">
                 <span className="avatar-wrap">
                   <Avatar user={m} size={42} />
-                  {isOnline && <span className="online-dot" title={t('head.online')} />}
+                  {isOnline && <span className={`presence-dot presence-${presence}`} title={t('head.online')} />}
                 </span>
-                <div className="person-text">
+                <div className="person-text person-open" role="button" tabIndex={0} onClick={() => openMember(m.id)} onKeyDown={(e) => { if (e.key === 'Enter') openMember(m.id); }}>
                   <strong className="truncate">
                     {m.name} {m.id === me.id && <span className="muted">{t('task.you')}</span>}
                   </strong>
@@ -135,10 +139,28 @@ export function TeamPage() {
                 )}
               </header>
 
-              <p className="person-status small">
-                <span className={`status-dot${isOnline ? ' on' : ''}`} />
-                {isOnline ? t('team.onlineNow') : t('members.joined', { date: formatDate(m.joinedAt) })}
-              </p>
+              <div className="person-status small">
+                <span>
+                  <span className={`status-dot status-${presence}`} />
+                  {presence === 'focus'
+                    ? t('now.focusUntil', { time: new Date(m.focusUntil!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })
+                    : presence === 'online'
+                      ? t('team.onlineNow')
+                      : t('now.offline')}
+                </span>
+                {zone && (
+                  <span className="person-time" title={m.timezone ?? ''}>
+                    <Clock size={13} /> <strong className="mono">{zone.time}</strong> {zone.city}
+                    <em>
+                      {m.id === me.id
+                        ? t('member.yourTime')
+                        : zone.diffHours === 0
+                          ? t('member.sameTime')
+                          : t(zone.diffHours > 0 ? 'member.ahead' : 'member.behind', { n: Math.abs(zone.diffHours) })}
+                    </em>
+                  </span>
+                )}
+              </div>
 
               <div className="person-load">
                 <div className="person-load-head">
@@ -151,6 +173,9 @@ export function TeamPage() {
               </div>
 
               <footer className="person-foot">
+                <button className="btn btn-sm btn-ghost-glass" onClick={() => openMember(m.id)}>
+                  {t('member.profile')}
+                </button>
                 <button className="btn btn-sm btn-ghost-glass" onClick={() => navigate({ page: 'tasks', assignee: m.id })}>
                   {t('team.tasks')} <ArrowUpRight size={14} />
                 </button>

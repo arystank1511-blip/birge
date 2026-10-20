@@ -305,6 +305,39 @@ describe('projects', () => {
   });
 });
 
+describe('profile', () => {
+  it('updates name, photo and time zone, and validates them', async () => {
+    const { agent, w } = await signUp('Ada');
+    const photo = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg-bytes').toString('base64');
+    const { body: me } = await agent
+      .patch('/api/me')
+      .send({ name: 'Ada Byron', avatar: photo, timezone: 'Asia/Almaty' })
+      .expect(200);
+    assert.deepEqual([me.name, me.avatar, me.timezone], ['Ada Byron', photo, 'Asia/Almaty']);
+
+    // Teammates see the photo in the member list.
+    const { body: members } = await agent.get(w('/members')).expect(200);
+    assert.equal(members[0].avatar, photo);
+
+    await agent.patch('/api/me').send({ avatar: 'https://example.com/me.png' }).expect(400);
+    await agent.patch('/api/me').send({ avatar: 'data:image/svg+xml;base64,PHN2Zz4=' }).expect(400);
+    await agent.patch('/api/me').send({ timezone: 'Mars/Olympus' }).expect(400);
+    await agent.patch('/api/me').send({ avatar: null }).expect(200);
+    assert.equal((await agent.get('/api/auth/me')).body.avatar, null);
+  });
+
+  it('starts and ends a focus session', async () => {
+    const { agent, w, user } = await signUp('Fox');
+    const { body: focusing } = await agent.put('/api/me/focus').send({ minutes: 25 }).expect(200);
+    assert.ok(focusing.focusUntil > new Date().toISOString());
+    const { body: members } = await agent.get(w('/members'));
+    assert.equal(members.find((m: { id: number }) => m.id === user.id).focusUntil, focusing.focusUntil);
+    const { body: done } = await agent.put('/api/me/focus').send({ minutes: 0 }).expect(200);
+    assert.equal(done.focusUntil, null);
+    await agent.put('/api/me/focus').send({ minutes: 999 }).expect(400);
+  });
+});
+
 describe('realtime', () => {
   it('streams changes to other members with presence', async () => {
     const owner = await withProject('Olivia');

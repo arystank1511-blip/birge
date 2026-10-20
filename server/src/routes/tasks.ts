@@ -215,7 +215,7 @@ export function tasksRouter(db: DB, realtime: Realtime): Router {
     const comments = (
       db
         .prepare(
-          `SELECT c.id, c.body, c.created_at, u.id AS user_id, u.name, u.color
+          `SELECT c.id, c.body, c.created_at, u.id AS user_id, u.name, u.color, u.avatar
            FROM comments c LEFT JOIN users u ON u.id = c.user_id
            WHERE c.task_id = ? ORDER BY c.created_at, c.id`,
         )
@@ -226,12 +226,13 @@ export function tasksRouter(db: DB, realtime: Realtime): Router {
         user_id: number | null;
         name: string | null;
         color: string | null;
+        avatar: string | null;
       }[]
     ).map((c) => ({
       id: c.id,
       body: c.body,
       createdAt: c.created_at,
-      author: c.user_id ? { id: c.user_id, name: c.name, color: c.color } : null,
+      author: c.user_id ? { id: c.user_id, name: c.name, color: c.color, avatar: c.avatar } : null,
     }));
     res.json({ ...task, subtaskList, comments });
   });
@@ -383,7 +384,7 @@ export function tasksRouter(db: DB, realtime: Realtime): Router {
     const { lastInsertRowid } = db
       .prepare('INSERT INTO comments (task_id, user_id, body, created_at) VALUES (?, ?, ?, ?)')
       .run(taskId, userId, body, createdAt);
-    const author = db.prepare('SELECT id, name, color FROM users WHERE id = ?').get(userId);
+    const author = db.prepare('SELECT id, name, color, avatar FROM users WHERE id = ?').get(userId);
     realtime.emit(req, res, { type: 'task', action: 'commented', taskId, title: task.title });
     res.status(201).json({ id: Number(lastInsertRowid), body, createdAt, author });
   });

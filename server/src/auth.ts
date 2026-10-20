@@ -19,19 +19,28 @@ export interface AuthOptions {
   authRateLimit: number;
 }
 
-interface UserRow {
+export interface UserRow {
   id: number;
   name: string;
   email: string;
   color: string;
   password_hash: string;
+  avatar?: string | null;
+  timezone?: string | null;
+  focus_until?: string | null;
 }
 
-export const publicUser = (u: Pick<UserRow, 'id' | 'name' | 'email' | 'color'>) => ({
+export const PUBLIC_USER_COLUMNS = 'id, name, email, color, avatar, timezone, focus_until';
+
+export const publicUser = (u: Pick<UserRow, 'id' | 'name' | 'email' | 'color' | 'avatar' | 'timezone' | 'focus_until'>) => ({
   id: u.id,
   name: u.name,
   email: u.email,
   color: u.color,
+  avatar: u.avatar ?? null,
+  timezone: u.timezone ?? null,
+  // Only report focus while it is still running.
+  focusUntil: u.focus_until && u.focus_until > new Date().toISOString() ? u.focus_until : null,
 });
 
 const email = z.string().trim().toLowerCase().email().max(200);
@@ -125,7 +134,7 @@ export function authRouter(db: DB, opts: AuthOptions): Router {
   });
 
   r.get('/me', requireAuth(db, opts.jwtSecret), (_req, res) => {
-    const user = db.prepare('SELECT id, name, email, color FROM users WHERE id = ?').get(currentUserId(res)) as unknown as UserRow;
+    const user = db.prepare(`SELECT ${PUBLIC_USER_COLUMNS} FROM users WHERE id = ?`).get(currentUserId(res)) as unknown as UserRow;
     res.json(publicUser(user));
   });
 

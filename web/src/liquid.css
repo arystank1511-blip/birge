@@ -312,6 +312,22 @@ h2 {
   background: color-mix(in srgb, var(--text) 86%, transparent);
 }
 
+/* ── Refraction (Chromium only, see LiquidGlassDefs.tsx) ──
+   Blur first, then bend the blurred backdrop through the lens map and lift saturation.
+   Board cards stay on the plain blur: there can be dozens of them and refraction is expensive. */
+[data-refract='on'] .glass {
+  backdrop-filter: blur(14px) url(#lg-pane) saturate(185%) brightness(1.04);
+}
+[data-refract='on'] .topbar-pill,
+[data-refract='on'] .segmented,
+[data-refract='on'] .btn-ghost-glass,
+[data-refract='on'] .presence {
+  backdrop-filter: blur(10px) url(#lg-pill) saturate(180%);
+}
+[data-theme='dark'][data-refract='on'] .glass {
+  backdrop-filter: blur(16px) url(#lg-pane) saturate(165%) brightness(0.98);
+}
+
 /* Respect the user's "reduce transparency" choice and the OS setting. */
 [data-solid='on'] .glass,
 [data-solid='on'] .card,

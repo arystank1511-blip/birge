@@ -7,12 +7,14 @@ import { useI18n } from '../i18n';
 import { addDays, isOverdue, weekOf } from '../metrics';
 
 const MAX_IN_CELL = 3;
+/** How many of today's deadlines fit before the "more in Tasks" link. */
+const TODAY_LIMIT = 5;
 
 /** Month grid of due dates. Weeks start on Monday, as in Russia and Kazakhstan. */
 export function CalendarPage() {
   const { t } = useI18n();
-  const { projects, openTask, newTask } = useWorkspace();
-  const toggleDone = useToggleDone();
+  const { openTask, newTask, navigate, projects } = useWorkspace();
+  const colorOf = (projectId: number) => projects.find((p) => p.id === projectId)?.color;
   const { data: tasks = [] } = useAllTasks();
   const today = todayISO();
   const [cursor, setCursor] = useState(() => {
@@ -21,7 +23,6 @@ export function CalendarPage() {
   });
   const [selected, setSelected] = useState(today);
 
-  const projectMap = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const byDay = useMemo(() => {
     const map = new Map<string, Task[]>();
     for (const task of tasks) {
@@ -53,6 +54,7 @@ export function CalendarPage() {
 
   const selectedTasks = byDay.get(selected) ?? [];
   const overdue = tasks.filter((task) => isOverdue(task, today)).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!));
+  const dueToday = (byDay.get(today) ?? []).filter((task) => task.status !== 'done');
 
   return (
     <div className="calendar-layout">
@@ -111,7 +113,7 @@ export function CalendarPage() {
                   <button
                     key={task.id}
                     className={`day-task${task.status === 'done' ? ' is-done' : ''}`}
-                    style={{ ['--tag' as string]: projectMap.get(task.projectId)?.color }}
+                    style={{ ['--tag' as string]: colorOf(task.projectId) }}
                     onClick={(e) => {
                       e.stopPropagation();
                       openTask(task.id);
@@ -130,64 +132,99 @@ export function CalendarPage() {
         </section>
       </div>
 
-      <aside className="calendar-side glass reveal">
-        <header className="panel-head">
-          <div>
-            <h2 className="cap">{selected === today ? t('time.today') : longDate(selected)}</h2>
-            <p className="muted small">{t('calendar.dueCount', { n: selectedTasks.length })}</p>
-          </div>
-          <button className="icon-btn" onClick={() => newTask()} aria-label={t('head.newTask')}>
-            <Plus size={17} />
-          </button>
-        </header>
-        {selectedTasks.length ? (
-          <ul className="my-list">
-            {selectedTasks.map((task) => (
-              <li key={task.id} className={task.status === 'done' ? 'is-done' : ''}>
-                <button
-                  className={`check${task.status === 'done' ? ' checked' : ''}`}
-                  onClick={() => toggleDone(task)}
-                  aria-label={t(task.status === 'done' ? 'board.reopen' : 'board.complete', { title: task.title })}
-                >
-                  <Check size={13} strokeWidth={3} />
+      <div className="calendar-side-col">
+        {/* Top: the day you picked, or what is overdue when you are looking at today. */}
+        <aside className="calendar-side glass reveal">
+          {selected !== today ? (
+            <>
+              <header className="panel-head">
+                <div>
+                  <h2 className="cap">{longDate(selected)}</h2>
+                  <p className="muted small">{t('calendar.dueCount', { n: selectedTasks.length })}</p>
+                </div>
+                <button className="link small" onClick={() => setSelected(today)}>
+                  {t('time.today')}
                 </button>
-                <button className="my-title" onClick={() => openTask(task.id)}>
-                  <span className="truncate">{task.title}</span>
-                  <span className="my-meta">
-                    <span className="tag" style={{ ['--tag' as string]: projectMap.get(task.projectId)?.color }}>
-                      <i />
-                      {projectMap.get(task.projectId)?.name}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="empty-note">{t('calendar.free')}</p>
-        )}
+              </header>
+              {selectedTasks.length ? (
+                <TaskChecklist tasks={selectedTasks} />
+              ) : (
+                <p className="empty-note">{t('calendar.free')}</p>
+              )}
+            </>
+          ) : (
+            <>
+              <header className="panel-head">
+                <div>
+                  <h2>{t('stats.overdue')}</h2>
+                  <p className="muted small">{t('calendar.overdueHint')}</p>
+                </div>
+                <span className={`count mono${overdue.length ? ' count-danger' : ''}`}>{overdue.length}</span>
+              </header>
+              {overdue.length ? <TaskChecklist tasks={overdue.slice(0, 5)} showDate /> : <p className="empty-note">{t('calendar.noOverdue')}</p>}
+            </>
+          )}
+        </aside>
 
-        {overdue.length > 0 && (
-          <>
-            <h3 className="sub-heading">{t('stats.overdue')}</h3>
-            <ul className="my-list">
-              {overdue.slice(0, 6).map((task) => (
-                <li key={task.id}>
-                  <button className="check" onClick={() => toggleDone(task)} aria-label={t('board.complete', { title: task.title })}>
-                    <Check size={13} strokeWidth={3} />
-                  </button>
-                  <button className="my-title" onClick={() => openTask(task.id)}>
-                    <span className="truncate">{task.title}</span>
-                    <span className="my-meta">
-                      <span className="due due-overdue">{longDate(task.dueDate!)}</span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </aside>
+        {/* Bottom: always today's deadlines, with a way through to the full list. */}
+        <aside className="calendar-side calendar-today glass reveal">
+          <header className="panel-head">
+            <div>
+              <h2>{t('home.dueToday')}</h2>
+            </div>
+            <span className="count mono">{dueToday.length}</span>
+            <button className="icon-btn icon-btn-sm" onClick={() => newTask()} aria-label={t('head.newTask')}>
+              <Plus size={15} />
+            </button>
+          </header>
+          {dueToday.length ? <TaskChecklist tasks={dueToday.slice(0, TODAY_LIMIT)} /> : <p className="empty-note">{t('calendar.free')}</p>}
+          {dueToday.length > TODAY_LIMIT && (
+            <button className="link small more-link" onClick={() => navigate({ page: 'tasks' })}>
+              {t('calendar.moreInTasks', { n: dueToday.length - TODAY_LIMIT })}
+            </button>
+          )}
+        </aside>
+      </div>
     </div>
+  );
+}
+
+/** A short list of tasks with a done checkbox (with Undo) and the project or the date underneath. */
+function TaskChecklist({ tasks, showDate = false }: { tasks: Task[]; showDate?: boolean }) {
+  const { t } = useI18n();
+  const { projects, openTask } = useWorkspace();
+  const toggleDone = useToggleDone();
+  const projectMap = new Map(projects.map((p) => [p.id, p]));
+  return (
+    <ul className="my-list">
+      {tasks.map((task) => {
+        const project = projectMap.get(task.projectId);
+        const done = task.status === 'done';
+        return (
+          <li key={task.id} className={done ? 'is-done' : ''}>
+            <button
+              className={`check check-round${done ? ' checked' : ''}`}
+              onClick={() => toggleDone(task)}
+              aria-label={t(done ? 'board.reopen' : 'board.complete', { title: task.title })}
+            >
+              <Check size={13} strokeWidth={3} />
+            </button>
+            <button className="my-title" onClick={() => openTask(task.id)}>
+              <span className="truncate">{task.title}</span>
+              <span className="my-meta">
+                {showDate ? (
+                  <span className="due due-overdue">{longDate(task.dueDate!)}</span>
+                ) : (
+                  <span className="tag" style={{ ['--tag' as string]: project?.color }}>
+                    <i />
+                    {project?.name}
+                  </span>
+                )}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

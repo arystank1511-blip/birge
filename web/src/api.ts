@@ -13,6 +13,12 @@ export interface User {
   name: string;
   email: string;
   color: string;
+  /** Profile photo as a data URL, or null for initials. */
+  avatar?: string | null;
+  /** IANA time zone, e.g. "Asia/Almaty". */
+  timezone?: string | null;
+  /** End of the current focus session, if one is running. */
+  focusUntil?: string | null;
 }
 
 export interface Member extends User {
@@ -86,7 +92,7 @@ export interface Comment {
   id: number;
   body: string;
   createdAt: string;
-  author: Pick<User, 'id' | 'name' | 'color'> | null;
+  author: Pick<User, 'id' | 'name' | 'color' | 'avatar'> | null;
 }
 
 export interface TaskDetail extends Task {
@@ -183,6 +189,9 @@ export const api = {
     request<User>('POST', '/auth/register', { name, email, password }),
   demo: () => request<User>('POST', '/auth/demo'),
   logout: () => request<void>('POST', '/auth/logout'),
+
+  updateMe: (patch: Partial<Pick<User, 'name' | 'avatar' | 'timezone'>>) => request<User>('PATCH', '/me', patch),
+  setFocus: (minutes: number) => request<User>('PUT', '/me/focus', { minutes }),
 
   workspaces: () => request<Workspace[]>('GET', '/workspaces'),
   createWorkspace: (name: string) => request<Workspace>('POST', '/workspaces', { name }),

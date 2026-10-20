@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, CalendarDays, Check, CheckSquare, ChevronsUpDown, Home, LogOut, Plus, Settings, Users } from 'lucide-react';
+import { BarChart3, CalendarDays, Check, CheckSquare, ChevronsUpDown, FolderKanban, Home, LogOut, Plus, Settings, Users } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ROLE_RANK, api, type Workspace } from '../api';
 import { useInvalidateTasks, useWorkspace } from '../hooks';
@@ -16,6 +16,7 @@ const NAV: { page: NavPage; key: MessageKey; icon: ReactNode }[] = [
   { page: 'home', key: 'nav.home', icon: <Home size={17} /> },
   { page: 'tasks', key: 'nav.tasks', icon: <CheckSquare size={17} /> },
   { page: 'calendar', key: 'nav.calendar', icon: <CalendarDays size={17} /> },
+  { page: 'projects', key: 'nav.projects', icon: <FolderKanban size={17} /> },
   { page: 'insights', key: 'nav.insights', icon: <BarChart3 size={17} /> },
   { page: 'team', key: 'nav.team', icon: <Users size={17} /> },
   { page: 'settings', key: 'nav.settings', icon: <Settings size={17} /> },

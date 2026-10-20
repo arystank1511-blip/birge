@@ -5,10 +5,10 @@ import { tx, type DB } from './db';
 export const DEMO_EMAIL = 'demo@birge.example';
 
 const USERS = [
-  { name: 'Alex Morgan', email: DEMO_EMAIL, color: '#c6f36b' },
-  { name: 'Mira Chen', email: 'mira@birge.example', color: '#7ee0d2' },
-  { name: 'Theo Walker', email: 'theo@birge.example', color: '#ffb27a' },
-  { name: 'Sana Iqbal', email: 'sana@birge.example', color: '#b9a4ff' },
+  { name: 'Alex Morgan', email: DEMO_EMAIL, color: '#c6f36b', timezone: 'Asia/Almaty' },
+  { name: 'Mira Chen', email: 'mira@birge.example', color: '#7ee0d2', timezone: 'Asia/Singapore' },
+  { name: 'Theo Walker', email: 'theo@birge.example', color: '#ffb27a', timezone: 'Europe/London' },
+  { name: 'Sana Iqbal', email: 'sana@birge.example', color: '#b9a4ff', timezone: 'Asia/Dubai' },
 ];
 
 type SeedProject = {
@@ -110,8 +110,8 @@ export function seed(db: DB) {
       const hash = bcrypt.hashSync(randomBytes(24).toString('hex'), 10);
       return Number(
         db
-          .prepare('INSERT INTO users (name, email, password_hash, color, created_at) VALUES (?, ?, ?, ?, ?)')
-          .run(u.name, u.email, hash, u.color, createdAt).lastInsertRowid,
+          .prepare('INSERT INTO users (name, email, password_hash, color, timezone, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(u.name, u.email, hash, u.color, u.timezone, createdAt).lastInsertRowid,
       );
     });
     // A shared team workspace plus a personal one, so the switcher has something to switch between.

@@ -2,12 +2,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Menu, Moon, Plus, Search, Sun } from 'lucide-react';
 import { api, workspaceApi, type Status, type User, type Workspace as WorkspaceInfo } from '../api';
-import { WorkspaceContext, isTypingTarget, useAppearanceContext } from '../hooks';
-import { useI18n } from '../i18n';
+import { WorkspaceContext, isTypingTarget, useAllTasks, useAppearanceContext, useWorkspace } from '../hooks';
+import { translate, useI18n } from '../i18n';
+import { getPrefs } from '../prefs';
+import { toast } from '../toast';
+import { todayISO } from '../dates';
 import { useRealtime } from '../realtime';
 import { routeKey, useRoute, type Route } from '../router';
 import { CalendarPage } from './CalendarPage';
 import { CommandPalette } from './CommandPalette';
+import { FocusIsland } from './FocusUi';
+import { MemberPanel } from './MemberPanel';
+import { ProjectsPage } from './ProjectsPage';
 import { HomePage } from './HomePage';
 import { InsightsPage } from './InsightsPage';
 import { NewTaskModal } from './NewTaskModal';
@@ -41,6 +47,7 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
   const [newTaskPreset, setNewTaskPreset] = useState<{ status?: Status; projectId?: number } | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [memberId, setMemberId] = useState<number | null>(null);
 
   const projects = useQuery({ queryKey: ['projects', ws], queryFn: wsApi.projects });
   const members = useQuery({ queryKey: ['members', ws], queryFn: wsApi.members });
@@ -59,7 +66,22 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
     },
     [navigate],
   );
-  const openTask = useCallback((id: number) => setOpenTaskId(id), []);
+  const openTask = useCallback((id: number) => {
+    setMemberId(null);
+    setOpenTaskId(id);
+  }, []);
+  const openMember = useCallback((id: number) => setMemberId(id), []);
+  // A profile belongs to the page it was opened from: any navigation (links, back button) closes it.
+  const currentRoute = routeKey(route);
+  useEffect(() => setMemberId(null), [currentRoute]);
+
+  // Keep the profile's home time zone in sync with this device, so teammates see the right local time.
+  useEffect(() => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (zone && me.timezone !== zone) {
+      api.updateMe({ timezone: zone }).then((user) => qc.setQueryData(['me'], user), () => undefined);
+    }
+  }, [me.timezone, qc]);
   const newTask = useCallback((preset?: { status?: Status; projectId?: number }) => setNewTaskPreset(preset ?? {}), []);
 
   // Global shortcuts: Ctrl/⌘+K opens the palette, N creates a task.
@@ -97,6 +119,9 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
     case 'calendar':
       page = <CalendarPage />;
       break;
+    case 'projects':
+      page = <ProjectsPage />;
+      break;
     case 'insights':
       page = <InsightsPage />;
       break;
@@ -124,6 +149,7 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
         online,
         navigate: go,
         openTask,
+        openMember,
         newTask,
       }}
     >
@@ -145,6 +171,7 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
               <Menu size={18} />
             </button>
             <span className="spacer" />
+            <FocusIsland />
             <div className="topbar-pill glass">
               <button className="topbar-search" onClick={() => setPaletteOpen(true)}>
                 <Search size={15} />
@@ -193,7 +220,29 @@ export function Workspace({ me, workspace, workspaces, onSwitch, onLostAccess }:
           />
         )}
         {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+        {memberId !== null && <MemberPanel memberId={memberId} onClose={() => setMemberId(null)} />}
+        <DueReminder />
       </div>
     </WorkspaceContext.Provider>
   );
+}
+
+/** Once a day per workspace, a nudge when you have tasks due today (can be switched off in Settings). */
+function DueReminder() {
+  const { me, workspace } = useWorkspace();
+  const { data: tasks } = useAllTasks();
+  useEffect(() => {
+    if (!tasks || !getPrefs().dueReminder) return;
+    const today = todayISO();
+    const key = `tl-reminded-${workspace.id}`;
+    try {
+      if (localStorage.getItem(key) === today) return;
+      localStorage.setItem(key, today);
+    } catch {
+      return;
+    }
+    const due = tasks.filter((task) => task.assigneeId === me.id && task.status !== 'done' && task.dueDate === today).length;
+    if (due > 0) toast(translate('reminder.dueToday', { n: due }), 'live');
+  }, [tasks, me.id, workspace.id]);
+  return null;
 }

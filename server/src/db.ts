@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS users (
   email         TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
   color         TEXT NOT NULL,
+  avatar        TEXT,
+  timezone      TEXT,
+  focus_until   TEXT,
   created_at    TEXT NOT NULL
 );
 
@@ -135,6 +138,12 @@ function migrate(db: DB) {
   };
   for (const [column, type] of Object.entries(added)) {
     if (!projectColumns.has(column)) db.exec(`ALTER TABLE projects ADD COLUMN ${column} ${type}`);
+  }
+
+  // Profile details added later: photo, home timezone and a "focusing until" status.
+  const userColumns = new Set((db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((c) => c.name));
+  for (const column of ['avatar', 'timezone', 'focus_until']) {
+    if (!userColumns.has(column)) db.exec(`ALTER TABLE users ADD COLUMN ${column} TEXT`);
   }
 }
 

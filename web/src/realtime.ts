@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CLIENT_ID, type Status } from './api';
 import { translate } from './i18n';
+import { getPrefs } from './prefs';
 import { toast } from './toast';
 
 interface LiveEvent {
@@ -72,7 +73,11 @@ export function useRealtime({ url, workspaceName, meId, onLostAccess }: Options)
       if (event.type === 'task') refresh('tasks', 'stats', 'projects', 'task');
       if (event.type === 'project') refresh('projects', 'tasks', 'stats');
       if (event.type === 'members') refresh('members', 'workspaces', 'tasks');
+      if (event.type === 'members' && event.userId === meId) refresh('me');
       if (event.type === 'workspace') refresh('workspaces');
+      // Profile and focus updates only refresh data; they never pop a toast.
+      if (event.type === 'members' && (event.action === 'profile' || event.action === 'focus')) return;
+      if (!getPrefs().liveToasts) return;
 
       const actor = event.actor?.name ?? '';
       const title = event.title ?? '';

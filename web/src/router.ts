@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 
 /**
- * Tiny hash router: #/home, #/tasks, #/tasks?assignee=3, #/calendar, #/insights, #/team, #/settings, #/project/7.
+ * Tiny hash router: #/home, #/tasks, #/tasks?assignee=3, #/calendar, #/projects, #/insights, #/team, #/settings, #/project/7.
  * Hash routes need no server config, survive reloads and work with the browser's back button.
  */
 export type Route =
   | { page: 'home' }
   | { page: 'tasks'; assignee?: number }
   | { page: 'calendar' }
+  | { page: 'projects' }
   | { page: 'insights' }
   | { page: 'team' }
   | { page: 'settings' }
@@ -23,6 +24,7 @@ export function parseRoute(hash: string): Route {
       return assignee > 0 ? { page: 'tasks', assignee } : { page: 'tasks' };
     }
     case 'calendar':
+    case 'projects':
     case 'insights':
     case 'team':
     case 'settings':

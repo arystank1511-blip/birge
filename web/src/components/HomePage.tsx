@@ -4,6 +4,7 @@ import { useAllTasks, useToggleDone, useWorkspace } from '../hooks';
 import { useI18n, type MessageKey } from '../i18n';
 import { addDays, completedBetween, countByDay, isOpen, isOverdue, localDay, percentChange, weekOf } from '../metrics';
 import { Bars, Rings } from './charts';
+import { FocusCard, RightNowCard } from './FocusUi';
 import { Ring } from './ui';
 
 function greetingKey(hour: number): MessageKey {
@@ -121,7 +122,6 @@ export function HomePage() {
             </ul>
           </div>
         </article>
-
         <article className="panel glass reveal dash-next">
           <header className="panel-head">
             <div>
@@ -157,30 +157,7 @@ export function HomePage() {
             <p className="empty-note">{t('home.allClear')}</p>
           )}
         </article>
-
-        <article className="panel glass reveal dash-projects">
-          <header className="panel-head">
-            <div>
-              <h2>{t('nav.projects')}</h2>
-              <p className="muted small">{t('home.projectsHint')}</p>
-            </div>
-          </header>
-          <ul className="project-progress">
-            {projects.map((p) => {
-              const done = p.taskCount - p.openCount;
-              return (
-                <li key={p.id}>
-                  <button onClick={() => navigate({ page: 'project', id: p.id })}>
-                    <Ring value={done} total={Math.max(p.taskCount, 1)} color={p.color} size={22} />
-                    <span className="truncate">{p.name}</span>
-                    <span className="mono muted">{p.taskCount ? Math.round((done / p.taskCount) * 100) : 0}%</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </article>
-
+        <FocusCard />
         <article className="panel glass reveal dash-mine">
           <header className="panel-head">
             <div>
@@ -224,7 +201,6 @@ export function HomePage() {
             <p className="empty-note">{t('home.allClear')}</p>
           )}
         </article>
-
         <article className="panel glass reveal dash-week">
           <header className="panel-head">
             <div>
@@ -252,6 +228,29 @@ export function HomePage() {
             label={t('home.thisWeek')}
           />
         </article>
+        <article className="panel glass reveal dash-projects">
+          <header className="panel-head">
+            <div>
+              <h2>{t('nav.projects')}</h2>
+              <p className="muted small">{t('home.projectsHint')}</p>
+            </div>
+          </header>
+          <ul className="project-progress">
+            {projects.map((p) => {
+              const done = p.taskCount - p.openCount;
+              return (
+                <li key={p.id}>
+                  <button onClick={() => navigate({ page: 'project', id: p.id })}>
+                    <Ring value={done} total={Math.max(p.taskCount, 1)} color={p.color} size={22} />
+                    <span className="truncate">{p.name}</span>
+                    <span className="mono muted">{p.taskCount ? Math.round((done / p.taskCount) * 100) : 0}%</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </article>
+        <RightNowCard />
       </section>
     </div>
   );

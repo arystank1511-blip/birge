@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { nowISO, tx, type DB } from '../db';
 import { HttpError, ctx, currentUserId, idParam, outranks, parse, rateLimit, requireRole, type Role } from '../http';
 import type { Realtime } from '../realtime';
+import { publicUser, type UserRow } from '../auth';
 
 const nameSchema = z.object({ name: z.string().trim().min(1).max(60) });
 const roleSchema = z.object({ role: z.enum(['owner', 'admin', 'member']) });
@@ -118,20 +119,13 @@ export function workspaceRouter(db: DB, realtime: Realtime): Router {
   r.get('/members', (_req, res) => {
     const rows = db
       .prepare(
-        `SELECT u.id, u.name, u.email, u.color, m.role, m.joined_at
+        `SELECT u.id, u.name, u.email, u.color, u.avatar, u.timezone, u.focus_until, m.role, m.joined_at
          FROM memberships m JOIN users u ON u.id = m.user_id
          WHERE m.workspace_id = ?
          ORDER BY CASE m.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, u.name`,
       )
-      .all(ctx(res).workspaceId) as {
-      id: number;
-      name: string;
-      email: string;
-      color: string;
-      role: Role;
-      joined_at: string;
-    }[];
-    res.json(rows.map((m) => ({ id: m.id, name: m.name, email: m.email, color: m.color, role: m.role, joinedAt: m.joined_at })));
+      .all(ctx(res).workspaceId) as unknown as (UserRow & { role: Role; joined_at: string })[];
+    res.json(rows.map((m) => ({ ...publicUser(m), role: m.role, joinedAt: m.joined_at })));
   });
 
   const memberRole = (workspaceId: number, userId: number) => {
