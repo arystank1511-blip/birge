@@ -1,5 +1,7 @@
 # Birge
 
+[![CI](https://github.com/arystank1511-blip/birge/actions/workflows/ci.yml/badge.svg)](https://github.com/arystank1511-blip/birge/actions/workflows/ci.yml)
+
 *Birge* means “together” in Kazakh. The dot over the i in the logo is a live status light: it pulses while you're connected to your team in real time.
 
 A real-time kanban tracker for small teams: workspaces with roles and invite links, live updates and presence, a drag-and-drop board, and a UI in English, Russian and Kazakh.
@@ -29,7 +31,7 @@ A real-time kanban tracker for small teams: workspaces with roles and invite lin
 | Frontend | React 19, TypeScript, Vite, TanStack Query, dnd-kit, lucide icons, hand-written CSS with design tokens |
 | Backend  | Node 22+, Express 5, Zod, built-in `node:sqlite` (no native build step), Server-Sent Events |
 | Auth     | bcryptjs, jsonwebtoken, httpOnly cookies |
-| Tests    | `node:test` + supertest: 18 API scenarios covering auth, tasks, projects, workspace isolation, roles, invites, migration and the live stream |
+| Tests    | `node:test` + supertest: 20 API scenarios covering auth, tasks, projects, workspace isolation, roles, invites, migration and the live stream |
 
 ## Getting started
 
@@ -46,7 +48,7 @@ npm run dev
 The SQLite database is created at `server/data/birge.db` and seeded with demo data on first start: a 4-person team workspace and a personal one. To reset it, run `npm run seed`.
 
 ```bash
-npm test            # API tests (18)
+npm test            # API tests (20)
 npm run typecheck   # server + web
 npm run build       # production build of the web app
 npm start           # API that also serves web/dist
@@ -100,6 +102,10 @@ Auth and invite preview are public. Everything else needs the session cookie.
 | POST | `/api/workspaces/:ws/tasks/:id/subtasks` · `/comments` | |
 | GET | `/api/workspaces/:ws/stats?today=YYYY-MM-DD` | |
 
+## Continuous integration
+
+GitHub Actions runs on every push to `main` and on every pull request, on Node 22 and 24: install, typecheck (server + web), API tests and the production build. See `.github/workflows/ci.yml`.
+
 ## Deploying
 
 Build the web app and run the API. It serves `web/dist` itself, so you deploy a single service:
@@ -115,4 +121,4 @@ Mount a persistent volume for `DB_FILE` (Railway, Fly.io, Render or a VPS). If y
 
 - Activity log per task
 - Email invites (the link flow is already in place)
-- Playwright end-to-end tests and GitHub Actions CI
+- Playwright end-to-end tests
